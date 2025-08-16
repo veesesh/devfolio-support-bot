@@ -1,9 +1,14 @@
 import argparse
+import os
+from dotenv import load_dotenv
 # from dataclasses import dataclass
 from langchain_community.vectorstores import Chroma
 from langchain_openai import OpenAIEmbeddings
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
+
+# Load environment variables from .env file
+load_dotenv()
 
 CHROMA_PATH = "chroma"
 
