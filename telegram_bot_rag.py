@@ -28,6 +28,11 @@ logger = logging.getLogger(__name__)
 # RAG Configuration
 CHROMA_PATH_DOCS = "chroma_docs"  # Documentation database
 CHROMA_PATH_BOOKS = "chroma"      # Books database
+ORGANIZER_USERNAME = "@vee19tel"  # Organizer to tag when uncertain
+
+# Confidence threshold - lower means more strict
+CONFIDENCE_THRESHOLD = 0.65
+MIN_CONTEXT_LENGTH = 200  # Minimum context length for confident answers
 
 PROMPT_TEMPLATE = """
 Answer the question based only on the following context about hackathons and Devfolio platform:
@@ -38,8 +43,40 @@ Answer the question based only on the following context about hackathons and Dev
 
 Answer the question based on the above context: {question}
 
-If the context doesn't contain enough information to answer the question, say "I don't have enough information in the provided documentation to answer that question. Could you try rephrasing or asking about hackathon organization, Devfolio features, or application processes?"
+IMPORTANT: 
+1. If the context doesn't contain enough specific information to answer the question confidently, respond with "UNCERTAIN"
+2. If you can answer the question but are not completely confident, start your response with "PARTIAL:"
+3. Only give confident answers when the context clearly and specifically addresses the question
+4. If the context doesn't contain enough information, respond with "UNCERTAIN"
 """
+
+CONFIDENCE_EVALUATION_PROMPT = """
+Based on the following context and question, evaluate how confident you can be in providing an accurate answer.
+
+Context: {context}
+Question: {question}
+
+Rate your confidence level:
+- HIGH: Context directly and comprehensively answers the question
+- MEDIUM: Context partially answers the question but some details may be missing
+- LOW: Context contains little relevant information or is too general
+
+Respond with only: HIGH, MEDIUM, or LOW
+"""
+
+def evaluate_confidence(query_text: str, context_text: str) -> str:
+    """Evaluate confidence level for the given context and question."""
+    try:
+        prompt_template = ChatPromptTemplate.from_template(CONFIDENCE_EVALUATION_PROMPT)
+        prompt = prompt_template.format(context=context_text, question=query_text)
+        
+        model = ChatOpenAI(temperature=0)  # Lower temperature for more consistent evaluation
+        confidence_level = model.invoke(prompt).content.strip().upper()
+        
+        return confidence_level if confidence_level in ['HIGH', 'MEDIUM', 'LOW'] else 'LOW'
+    except Exception as e:
+        logger.error(f"Confidence evaluation error: {e}")
+        return 'LOW'
 
 def query_rag_system(query_text: str, use_docs: bool = True) -> str:
     """Query the RAG system and return formatted response with sources."""
@@ -53,8 +90,23 @@ def query_rag_system(query_text: str, use_docs: bool = True) -> str:
 
         # Search the DB
         results = db.similarity_search_with_relevance_scores(query_text, k=4)
-        if len(results) == 0 or results[0][1] < 0.5:
-            return "I couldn't find relevant information for your question. Try asking about hackathon organization, Devfolio features, or application processes."
+        if len(results) == 0 or results[0][1] < CONFIDENCE_THRESHOLD:
+            return f"🤔 I couldn't find relevant information for your question in the documentation.\n\n{ORGANIZER_USERNAME} Could you help with this question?"
+
+        # Prepare context
+        context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
+        
+        # Check context length
+        if len(context_text) < MIN_CONTEXT_LENGTH:
+            return f"🤔 I found limited information for your question.\n\n{ORGANIZER_USERNAME} This might need human expertise!"
+        
+        # Evaluate confidence
+        confidence_level = evaluate_confidence(query_text, context_text)
+        logger.info(f"Confidence level: {confidence_level}")
+        
+        # If confidence is low, tag organizer
+        if confidence_level == 'LOW':
+            return f"🤔 I found some information but I'm not confident about the answer to avoid giving incorrect details.\n\n{ORGANIZER_USERNAME} Could you help with this question: '{query_text}'?"
 
         # Prepare context and query
         context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
@@ -64,6 +116,17 @@ def query_rag_system(query_text: str, use_docs: bool = True) -> str:
         # Get AI response
         model = ChatOpenAI()
         response_text = model.invoke(prompt).content
+        
+        # Check if AI is uncertain
+        if "UNCERTAIN" in response_text:
+            return f"🤔 I don't have enough specific information to answer your question confidently.\n\n{ORGANIZER_USERNAME} Could you help with: '{query_text}'?"
+        
+        # Handle partial confidence
+        confidence_prefix = ""
+        if response_text.startswith("PARTIAL:"):
+            response_text = response_text.replace("PARTIAL:", "").strip()
+            if confidence_level == 'MEDIUM':
+                confidence_prefix = "⚠️ *Partial answer* (some details might be missing):\n\n"
 
         # Format sources for Telegram
         if use_docs:
@@ -82,13 +145,18 @@ def query_rag_system(query_text: str, use_docs: bool = True) -> str:
             unique_sources = list(dict.fromkeys(sources))
             sources_text = "\n".join(unique_sources[:3])  # Limit to 3 sources for Telegram
             
-            return f"{response_text}\n\n📚 *Sources:*\n{sources_text}"
+            # Add confidence indicator
+            confidence_indicator = ""
+            if confidence_level == 'MEDIUM':
+                confidence_indicator = "\n\n💡 *If you need more specific details, feel free to ask* " + ORGANIZER_USERNAME
+            
+            return f"{confidence_prefix}{response_text}\n\n📚 *Sources:*\n{sources_text}{confidence_indicator}"
         else:
-            return response_text
+            return f"{confidence_prefix}{response_text}"
 
     except Exception as e:
         logger.error(f"RAG query error: {e}")
-        return "Sorry, I encountered an error while processing your question. Please try again."
+        return f"❌ Sorry, I encountered an error while processing your question.\n\n{ORGANIZER_USERNAME} Could you help with this technical issue?"
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle incoming messages."""
@@ -171,6 +239,8 @@ def main() -> None:
     print("   • In groups: Only responds when mentioned (@botname)")
     print("   • Searches Devfolio documentation for answers")
     print("   • Provides clickable source links")
+    print("   • Tags organizer (@vee19tel) when uncertain")
+    print("   • Uses confidence evaluation to avoid wrong answers")
     print("\n🔗 Add the bot to a private group and mention it to test!")
     print("   Example: '@yourbotname How do I organize a hackathon?'")
     
