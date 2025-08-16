@@ -1,6 +1,6 @@
-# LangChain RAG Tutorial
+# LangChain RAG Tutorial with Telegram Bot
 
-A Retrieval-Augmented Generation (RAG) system using LangChain, OpenAI, and ChromaDB to query documents intelligently. This tutorial demonstrates how to create a vector database from markdown documents and query it using natural language.
+A comprehensive Retrieval-Augmented Generation (RAG) system using LangChain, OpenAI, and ChromaDB to query documents intelligently. This project includes both command-line interfaces and a Telegram bot for interactive Q&A about hackathons and Devfolio platform.
 
 ## 🎯 What This Project Does
 
@@ -13,6 +13,7 @@ This RAG system:
 - Allows natural language queries against the document collections
 - Returns relevant context with clickable links to live documentation
 - Supports both literary texts (Alice in Wonderland) and technical documentation (Devfolio guides)
+- **🤖 Includes a Telegram bot with intelligent confidence evaluation and organizer tagging**
 
 ## 📂 Available Document Collections
 
@@ -44,13 +45,20 @@ python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
-### 2. OpenAI API Key Configuration
+### 2. OpenAI API Key & Telegram Bot Configuration
 
-Create a `.env` file in the project root and add your OpenAI API key:
+Create a `.env` file in the project root and add your API keys:
 
 ```bash
 OPENAI_API_KEY=your_openai_api_key_here
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
 ```
+
+**To get a Telegram Bot Token:**
+1. Message [@BotFather](https://t.me/BotFather) on Telegram
+2. Send `/newbot`
+3. Choose a name and username for your bot
+4. Copy the token and add it to your `.env` file
 
 ⚠️ **Important**: Never commit your `.env` file to version control!
 
@@ -68,6 +76,8 @@ pip install "unstructured[md]"
 # Download required NLTK data
 python -c "import nltk; nltk.download('punkt_tab'); nltk.download('averaged_perceptron_tagger_eng')"
 ```
+
+**Note**: The requirements.txt now includes `python-telegram-bot` for the Telegram bot functionality.
 
 **Option B: Manual Installation with Compatibility Fixes**
 
@@ -101,11 +111,118 @@ See [this thread](https://github.com/microsoft/onnxruntime/issues/11037) for add
 **Windows Users:**
 Install Microsoft C++ Build Tools by following [this guide](https://github.com/bycloudai/InstallVSBuildToolsWindows) before installing dependencies.
 
+## � Telegram Bot Integration
+
+### Running the Telegram Bot
+
+After setting up your databases and configuring the bot token:
+
+```bash
+python telegram_bot_rag.py
+```
+
+Expected output:
+```
+🤖 RAG-integrated Telegram bot is starting...
+📋 Bot behavior:
+   • In private chats: Responds to all messages with RAG
+   • In groups: Only responds when mentioned (@botname)
+   • Searches Devfolio documentation for answers
+   • Provides clickable source links
+   • Tags organizer (@vee19tel) when uncertain
+   • Uses confidence evaluation to avoid wrong answers
+
+🔗 Add the bot to a private group and mention it to test!
+   Example: '@yourbotname How do I organize a hackathon?'
+```
+
+### Bot Features
+
+#### 🧠 **Smart Confidence System**
+
+The bot uses intelligent confidence evaluation to provide accurate responses:
+
+- **✅ High Confidence**: Provides complete answers with source links
+- **⚠️ Medium Confidence**: Gives partial answers with warnings and suggests contacting organizer
+- **🤔 Low/No Confidence**: Tags the organizer (@vee19tel) for human assistance
+
+#### 🎯 **Group-Friendly Behavior**
+
+- **Private Chats**: Responds to all messages
+- **Groups**: Only responds when mentioned (`@botname question`)
+- **Mention Detection**: Recognizes both direct mentions and replies to bot messages
+
+#### 📚 **Intelligent Document Search**
+
+- Searches through 78+ hackathon documentation files
+- Provides clickable links to live documentation
+- Shows relevance scores for debugging
+- Uses optimized chunking for better context
+
+### Sample Telegram Bot Interactions
+
+#### High Confidence Response:
+```
+User: @hackathonbot How do I submit a project to a hackathon?
+
+Bot: To submit a project to a hackathon on Devfolio, follow these steps:
+
+1. Head to your Hackathon Dashboard and click "Add Project"
+2. Fill in all required details including project name, tagline, technologies used
+3. Add your GitHub repository, demo video, and screenshots
+4. Click "Publish Project" to finalize your submission
+
+📚 Sources:
+• [Project Submission](https://guide.devfolio.co/docs/guide/participating-in-hackathons/project-submission)
+• [Judging](https://guide.devfolio.co/docs/guide/participating-in-hackathons/judging-1)
+```
+
+#### Medium Confidence Response:
+```
+User: @hackathonbot What are the best practices for winning hackathons?
+
+Bot: ⚠️ Partial answer (some details might be missing):
+
+Based on the documentation, here are some key practices:
+- Engage with the community early
+- Ask questions during the event
+- Maintain good documentation
+- Focus on solving real problems
+- Present your solution clearly
+
+📚 Sources:
+• [Participating In Hackathons](https://guide.devfolio.co/docs/guide/participating-in-hackathons)
+
+💡 If you need more specific details, feel free to ask @vee19tel
+```
+
+#### Low Confidence Response:
+```
+User: @hackathonbot How much should I budget for organizing a 500-person hackathon?
+
+Bot: 🤔 I found some information but I'm not confident about the answer to avoid giving incorrect details.
+
+@vee19tel Could you help with this question: 'How much should I budget for organizing a 500-person hackathon?'
+```
+
+### Testing the Bot
+
+#### **High Confidence Questions** (should answer confidently):
+- "How do I apply to an offline hackathon?"
+- "What are the different hackathon modes?"
+- "How do I claim my hackathon schwag?"
+
+#### **Medium Confidence Questions** (partial answers):
+- "What should I include in my demo video?"
+- "How do I make my Devfolio profile stand out?"
+
+#### **Low Confidence Questions** (should tag organizer):
+- "What are the legal requirements for organizing hackathons?"
+- "How much does it cost to host on Devfolio?"
+
 ## 🗃️ Working with Document Collections
 
 ### Option 1: Books Collection (Literary Texts)
-
-#### Create the Vector Database
 
 ```bash
 python create_database.py
@@ -248,8 +365,10 @@ langchain-rag-tutorial/
 ├── chroma_docs/                             # Documentation vector database
 ├── .env                                     # OpenAI API key (create this)
 ├── .gitignore                               # Git ignore file
+├── telegram_bot_basic.py                   # Basic Telegram bot (echo responses)
+├── telegram_bot_group_friendly.py          # Group-friendly bot (mention detection)
+├── telegram_bot_rag.py                     # Full RAG-integrated bot with confidence evaluation
 ├── create_database.py                       # Script to create books database
-├── create_docs_database.py                 # Script to create documentation database
 ├── query_data.py                            # Script to query books database
 ├── query_docs.py                            # Script to query documentation database
 ├── compare_embeddings.py                    # Utility to compare embeddings
@@ -300,9 +419,38 @@ text_splitter = RecursiveCharacterTextSplitter(
 )
 ````
 
-### Clickable Documentation Links
+### Telegram Bot Configuration
 
-The documentation query system automatically converts file paths to live documentation URLs:
+#### Setting the Organizer Username
+
+To change the organizer who gets tagged when the bot is uncertain, modify `telegram_bot_rag.py`:
+
+```python
+ORGANIZER_USERNAME = "@your_username"  # Change this to your Telegram username
+```
+
+#### Adjusting Confidence Thresholds
+
+Fine-tune the bot's confidence evaluation:
+
+```python
+CONFIDENCE_THRESHOLD = 0.65    # Lower = more strict, higher = more permissive
+MIN_CONTEXT_LENGTH = 200       # Minimum context length for confident answers
+```
+
+#### Customizing Bot Responses
+
+Modify response templates in `telegram_bot_rag.py`:
+
+```python
+# For uncertain responses
+return f"🤔 I found some information but I'm not confident about the answer to avoid giving incorrect details.\n\n{ORGANIZER_USERNAME} Could you help with this question: '{query_text}'?"
+
+# For partial responses  
+confidence_prefix = "⚠️ *Partial answer* (some details might be missing):\n\n"
+```
+
+### Clickable Documentation Links
 
 - **Base URL**: `https://guide.devfolio.co/`
 - **Path Conversion**: `data/docs/guide/modes.mdx` → `https://guide.devfolio.co/docs/guide/modes`
