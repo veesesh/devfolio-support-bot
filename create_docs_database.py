@@ -19,8 +19,8 @@ openai.api_key = os.environ['OPENAI_API_KEY']
 # openai.api_key = os.getenv("OPENAI_API_KEY")
 
 
-CHROMA_PATH = "chroma"
-DATA_PATHS = ["data/books", "data/docs"]  # Multiple data directories
+CHROMA_PATH = "chroma_docs"  # Separate database for docs
+DATA_PATH = "data/docs"
 
 
 def main():
@@ -36,35 +36,47 @@ def generate_data_store():
 def load_documents():
     documents = []
     
-    # Load from all specified directories
-    for data_path in DATA_PATHS:
-        # Load .md files
-        md_loader = DirectoryLoader(data_path, glob="**/*.md", recursive=True)
-        md_docs = md_loader.load()
-        documents.extend(md_docs)
-        
-        # Load .mdx files  
-        mdx_loader = DirectoryLoader(data_path, glob="**/*.mdx", recursive=True)
-        mdx_docs = mdx_loader.load()
-        documents.extend(mdx_docs)
+    # Load .md files
+    md_loader = DirectoryLoader(DATA_PATH, glob="**/*.md", recursive=True)
+    md_docs = md_loader.load()
+    documents.extend(md_docs)
     
-    print(f"Loaded {len(documents)} documents from {DATA_PATHS}")
+    # Load .mdx files  
+    mdx_loader = DirectoryLoader(DATA_PATH, glob="**/*.mdx", recursive=True)
+    mdx_docs = mdx_loader.load()
+    documents.extend(mdx_docs)
+    
+    print(f"Loaded {len(documents)} documentation files from {DATA_PATH}")
     return documents
 
 
 def split_text(documents: list[Document]):
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=300,
-        chunk_overlap=100,
+        chunk_size=1000,     # Increased for better context preservation
+        chunk_overlap=150,   # Larger overlap to maintain continuity
         length_function=len,
         add_start_index=True,
+        # Add separators optimized for markdown/mdx
+        separators=[
+            "\n## ",      # Markdown headers
+            "\n### ",     # Sub-headers
+            "\n#### ",    # Sub-sub-headers
+            "\n\n",       # Paragraph breaks
+            "\n",         # Line breaks
+            " ",          # Spaces
+            ""            # Characters
+        ]
     )
     chunks = text_splitter.split_documents(documents)
     print(f"Split {len(documents)} documents into {len(chunks)} chunks.")
 
-    document = chunks[10]
-    print(document.page_content)
-    print(document.metadata)
+    if len(chunks) > 0:
+        document = chunks[0] if len(chunks) > 0 else None
+        if document:
+            print("Sample chunk:")
+            print(document.page_content[:300] + "...")
+            print(f"Chunk length: {len(document.page_content)} characters")
+            print(f"Metadata: {document.metadata}")
 
     return chunks
 

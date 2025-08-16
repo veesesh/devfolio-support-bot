@@ -6,12 +6,26 @@ A Retrieval-Augmented Generation (RAG) system using LangChain, OpenAI, and Chrom
 
 This RAG system:
 
-- Loads markdown documents from the `data/books/` directory
-- Splits them into chunks using LangChain's text splitter
+- Loads markdown (.md) and MDX (.mdx) documents from multiple directories
+- Splits them into optimized chunks using LangChain's text splitter with markdown-aware separators
 - Creates embeddings using OpenAI's embedding model
-- Stores embeddings in a ChromaDB vector database
-- Allows natural language queries against the document collection
-- Returns relevant context and sources for each query
+- Stores embeddings in ChromaDB vector databases
+- Allows natural language queries against the document collections
+- Returns relevant context with clickable links to live documentation
+- Supports both literary texts (Alice in Wonderland) and technical documentation (Devfolio guides)
+
+## 📂 Available Document Collections
+
+### 1. Books Collection (`data/books/`)
+
+- Contains literary texts like Alice in Wonderland
+- Use `create_database.py` and `query_data.py` for this collection
+
+### 2. Documentation Collection (`data/docs/`)
+
+- Contains hackathon and Devfolio platform documentation
+- Use `create_docs_database.py` and `query_docs.py` for this collection
+- Sources are automatically converted to clickable links to live documentation
 
 ## 📋 Prerequisites
 
@@ -87,7 +101,11 @@ See [this thread](https://github.com/microsoft/onnxruntime/issues/11037) for add
 **Windows Users:**
 Install Microsoft C++ Build Tools by following [this guide](https://github.com/bycloudai/InstallVSBuildToolsWindows) before installing dependencies.
 
-### 5. Create the Vector Database
+## 🗃️ Working with Document Collections
+
+### Option 1: Books Collection (Literary Texts)
+
+#### Create the Vector Database
 
 ```bash
 python create_database.py
@@ -101,7 +119,7 @@ Split 1 documents into 801 chunks.
 Saved 801 chunks to chroma.
 ```
 
-### 6. Query the Database
+#### Query the Database
 
 ```bash
 python query_data.py "How does Alice meet the Mad Hatter?"
@@ -115,6 +133,50 @@ Answer the question based only on the following context:
 Response: [AI-generated answer based on context]
 Sources: ['data/books/alice_in_wonderland.md', ...]
 ```
+
+### Option 2: Documentation Collection (Technical Docs)
+
+#### Create the Documentation Database
+
+```bash
+python create_docs_database.py
+```
+
+Expected output:
+
+```
+Loaded 78 documentation files from data/docs
+Split 78 documents into 257 chunks.
+[Sample chunk content...]
+Saved 257 chunks to chroma_docs.
+```
+
+#### Query the Documentation
+
+```bash
+python query_docs.py "how to organize university hackathon"
+```
+
+Expected output:
+
+```
+RELEVANCE SCORES:
+1. setting-up-a-hackathon-for-universities.mdx: 0.768
+[More scores...]
+
+Response: [AI-generated answer with step-by-step guidance]
+
+Sources:
+- [Setting Up A Hackathon For Universities](https://guide.devfolio.co/docs/guide/setting-up-a-hackathon-for-universities)
+- [Modes](https://guide.devfolio.co/docs/guide/modes)
+[More clickable links...]
+```
+
+[Retrieved context...]
+Response: [AI-generated answer based on context]
+Sources: ['data/books/alice_in_wonderland.md', ...]
+
+````
 
 ## 🔧 Common Issues and Troubleshooting
 
@@ -136,7 +198,7 @@ Sources: ['data/books/alice_in_wonderland.md', ...]
 
 ```bash
 python -c "import nltk; nltk.download('punkt_tab'); nltk.download('averaged_perceptron_tagger_eng')"
-```
+````
 
 ### Version Compatibility Issues
 
@@ -154,9 +216,10 @@ pip install --upgrade openai langchain langchain-openai langchain-community
 
 **Possible Causes**:
 
-1. Vector database not created - run `python create_database.py` first
+1. Vector database not created - run the appropriate create script first
 2. Query too specific - try broader queries
-3. Relevance threshold too high (0.7) - documents must be highly relevant
+3. Relevance threshold too high - documents must be highly relevant
+4. Wrong database - make sure you're using the right query script for your data
 
 ### ChromaDB Warnings
 
@@ -173,29 +236,87 @@ pip install langchain-chroma
 ```
 langchain-rag-tutorial/
 ├── data/
-│   └── books/
-│       └── alice_in_wonderland.md    # Source document
-├── chroma/                           # Vector database (created after running create_database.py)
-├── .env                             # OpenAI API key (create this)
-├── .gitignore                       # Git ignore file
-├── create_database.py               # Script to create vector database
-├── query_data.py                    # Script to query the database
-├── compare_embeddings.py            # Utility to compare embeddings
-├── requirements.txt                 # Python dependencies
-└── README.md                        # This file
+│   ├── books/
+│   │   └── alice_in_wonderland.md           # Literary source document
+│   └── docs/
+│       └── guide/                           # Hackathon documentation (.mdx files)
+│           ├── setting-up-a-hackathon-for-universities.mdx
+│           ├── modes.mdx
+│           ├── apply-with-devfolio-integration.mdx
+│           └── [78+ other documentation files]
+├── chroma/                                  # Books vector database
+├── chroma_docs/                             # Documentation vector database
+├── .env                                     # OpenAI API key (create this)
+├── .gitignore                               # Git ignore file
+├── create_database.py                       # Script to create books database
+├── create_docs_database.py                 # Script to create documentation database
+├── query_data.py                            # Script to query books database
+├── query_docs.py                            # Script to query documentation database
+├── compare_embeddings.py                    # Utility to compare embeddings
+├── analyze_chunks.py                        # Utility to analyze chunking strategies
+├── requirements.txt                         # Python dependencies
+└── README.md                                # This file
 ```
+
+├── create_database.py # Script to create vector database
+├── query_data.py # Script to query the database
+├── compare_embeddings.py # Utility to compare embeddings
+├── requirements.txt # Python dependencies
+└── README.md # This file
+
+````
 
 ## 🛠️ Customization
 
 ### Adding Your Own Documents
 
+**For Books/Literary Texts:**
 1. Place markdown files in `data/books/`
 2. Run `python create_database.py` to recreate the database
 3. Query using `python query_data.py "your question"`
 
+**For Documentation:**
+1. Place .md or .mdx files in `data/docs/`
+2. Run `python create_docs_database.py` to recreate the database
+3. Query using `python query_docs.py "your question"`
+
+### Optimized Chunking Strategy
+
+The documentation database uses improved chunking optimized for technical content:
+
+```python
+text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=1000,     # Larger chunks for better context
+    chunk_overlap=150,   # More overlap for continuity
+    separators=[
+        "\n## ",         # Markdown headers
+        "\n### ",        # Sub-headers
+        "\n#### ",       # Sub-sub-headers
+        "\n\n",          # Paragraph breaks
+        "\n",            # Line breaks
+        " ",             # Spaces
+        ""               # Characters
+    ]
+)
+````
+
+### Clickable Documentation Links
+
+The documentation query system automatically converts file paths to live documentation URLs:
+
+- **Base URL**: `https://guide.devfolio.co/`
+- **Path Conversion**: `data/docs/guide/modes.mdx` → `https://guide.devfolio.co/docs/guide/modes`
+- **Format**: `[Readable Title](URL)` for easy navigation
+
+To customize the base URL, modify the `base_url` variable in `query_docs.py`:
+
+```python
+base_url = "https://your-docs-site.com/"
+```
+
 ### Adjusting Chunk Size
 
-In `create_database.py`, modify:
+In `create_database.py` (for books), modify:
 
 ```python
 text_splitter = RecursiveCharacterTextSplitter(
@@ -224,7 +345,70 @@ model = ChatOpenAI(model="gpt-4")  # Use GPT-4
 model = ChatOpenAI(model="gpt-3.5-turbo-16k")  # For longer contexts
 ```
 
-## 🔍 Edge Cases and Limitations
+## � Example Use Cases
+
+### Documentation Queries
+
+Perfect for technical documentation, guides, and how-to content:
+
+```bash
+# Hackathon organization
+python query_docs.py "how to organize university hackathon"
+python query_docs.py "what are the different hackathon modes"
+python query_docs.py "how to integrate apply with devfolio button"
+
+# Platform features
+python query_docs.py "how does judging work on devfolio"
+python query_docs.py "what is quadratic voting"
+python query_docs.py "how to set up offline judging"
+```
+
+### Literary Queries
+
+Great for educational content, literature analysis, and creative writing:
+
+```bash
+# Character analysis
+python query_data.py "How does Alice meet the Mad Hatter?"
+python query_data.py "What is the Cheshire Cat's role in the story?"
+
+# Plot understanding
+python query_data.py "What happens at the tea party?"
+python query_data.py "How does Alice fall down the rabbit hole?"
+```
+
+## 🚀 Advanced Features
+
+### Relevance Score Debugging
+
+The documentation query system shows relevance scores to help you understand result quality:
+
+```
+RELEVANCE SCORES:
+1. setting-up-a-hackathon-for-universities.mdx: 0.768
+2. modes.mdx: 0.753
+3. judging-1.mdx: 0.751
+```
+
+### Automatic Link Generation
+
+Sources are automatically converted to clickable documentation links:
+
+```
+Sources:
+- [Setting Up A Hackathon For Universities](https://guide.devfolio.co/docs/guide/setting-up-a-hackathon-for-universities)
+- [Modes](https://guide.devfolio.co/docs/guide/modes)
+```
+
+### Smart Chunk Analysis
+
+Use the included analysis tool to optimize chunking for your content:
+
+```bash
+python analyze_chunks.py
+```
+
+## �🔍 Edge Cases and Limitations
 
 ### 1. Large Documents
 
