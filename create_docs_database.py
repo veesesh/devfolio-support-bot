@@ -82,16 +82,36 @@ def split_text(documents: list[Document]):
 
 
 def save_to_chroma(chunks: list[Document]):
-    # Clear out the database first.
+    # Clear out the database first with better error handling
     if os.path.exists(CHROMA_PATH):
-        shutil.rmtree(CHROMA_PATH)
+        try:
+            print(f"Removing existing database at {CHROMA_PATH}...")
+            shutil.rmtree(CHROMA_PATH)
+            print("✅ Successfully removed old database")
+        except PermissionError as e:
+            print(f"⚠️  Permission error removing {CHROMA_PATH}: {e}")
+            print("💡 Try stopping any running bots or processes using the database")
+            print("💡 Or run: sudo rm -rf chroma_docs")
+            return
+        except OSError as e:
+            print(f"⚠️  OS error removing {CHROMA_PATH}: {e}")
+            print("💡 The directory might be in use. Stop the bot and try again.")
+            return
+        except Exception as e:
+            print(f"❌ Unexpected error removing {CHROMA_PATH}: {e}")
+            return
 
     # Create a new DB from the documents.
-    db = Chroma.from_documents(
-        chunks, OpenAIEmbeddings(), persist_directory=CHROMA_PATH
-    )
-    db.persist()
-    print(f"Saved {len(chunks)} chunks to {CHROMA_PATH}.")
+    try:
+        print("Creating new ChromaDB database...")
+        db = Chroma.from_documents(
+            chunks, OpenAIEmbeddings(), persist_directory=CHROMA_PATH
+        )
+        db.persist()
+        print(f"✅ Saved {len(chunks)} chunks to {CHROMA_PATH}.")
+    except Exception as e:
+        print(f"❌ Error creating database: {e}")
+        print("💡 Make sure your OpenAI API key is set correctly in .env file")
 
 
 if __name__ == "__main__":
