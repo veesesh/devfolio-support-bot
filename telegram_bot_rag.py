@@ -170,6 +170,18 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     # Log the message
     logger.info(f"Message from {user.first_name} in {chat_type}: {message_text}")
     
+    # Only respond in groups - ignore private messages
+    if chat_type == 'private':
+        logger.info(f"Ignoring private message from {user.first_name}")
+        await update.message.reply_text(
+            "👋 Hi! I only work in groups to help with hackathon questions.\n\n"
+            
+            "💡 It’s always recommended to ask questions in public — it helps others who might have the same question and keeps the conversation more engaging.  \n\n"
+            "🙌 And if you ever get stuck, someone from our team will be happy to jump in and help with the context."
+            f"Example: @{bot_username} How do I organize a hackathon?"
+        )
+        return
+    
     # In groups, only respond if bot is mentioned
     if chat_type in ['group', 'supergroup']:
         bot_mentioned = False
@@ -235,13 +247,13 @@ def main() -> None:
     logger.info("Starting RAG-integrated bot...")
     print("🤖 RAG-integrated Telegram bot is starting...")
     print("📋 Bot behavior:")
-    print("   • In private chats: Responds to all messages with RAG")
-    print("   • In groups: Only responds when mentioned (@botname)")
+    print("   • Groups ONLY: Responds when mentioned (@botname) in public/private groups")
+    print("   • Private DMs: Politely redirects users to use bot in groups")
     print("   • Searches Devfolio documentation for answers")
     print("   • Provides clickable source links")
     print("   • Tags organizer (@vee19tel) when uncertain")
     print("   • Uses confidence evaluation to avoid wrong answers")
-    print("\n🔗 Add the bot to a private group and mention it to test!")
+    print("\n🔗 Add the bot to a group and mention it to test!")
     print("   Example: '@yourbotname How do I organize a hackathon?'")
     
     # Run the bot until the user presses Ctrl-C

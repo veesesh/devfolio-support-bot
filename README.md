@@ -192,8 +192,8 @@ You should see:
 ```
 🤖 RAG-integrated Telegram bot is starting...
 📋 Bot behavior:
-   • In private chats: Responds to all messages with RAG
-   • In groups: Only responds when mentioned (@botname)
+   • Groups ONLY: Responds when mentioned (@botname) in public/private groups
+   • Private DMs: Politely redirects users to use bot in groups
    ...
 ```
 
@@ -286,14 +286,14 @@ python telegram_bot_rag.py
 Expected output:
 
 ```
-🤖 RAG-integrated Telegram bot is starting...
-📋 Bot behavior:
-   • In private chats: Responds to all messages with RAG
-   • In groups: Only responds when mentioned (@botname)
-   • Searches Devfolio documentation for answers
-   • Provides clickable source links
-   • Tags organizer (@vee19tel) when uncertain
-   • Uses confidence evaluation to avoid wrong answers
+The bot has sophisticated behavior:
+- 📱 **Groups ONLY**: Only works in public/private groups (Telegram or Discord-style)
+- 🔍 **Smart Mention Detection**: Responds when mentioned (@botname) in groups
+- 🚫 **No Direct Messages**: Politely redirects private DM attempts to group usage
+- 🤖 **RAG Integration**: Searches the documentation database for accurate answers
+- 🧠 **Confidence Evaluation**: Three-tier system (HIGH/MEDIUM/LOW confidence)
+- 🏷️ **Smart Tagging**: Tags organizer @vee19tel when uncertain (LOW confidence)
+- 🔗 **Source Links**: Provides clickable links to relevant documentation
 
 🔗 Add the bot to a private group and mention it to test!
    Example: '@yourbotname How do I organize a hackathon?'
