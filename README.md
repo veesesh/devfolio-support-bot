@@ -273,31 +273,72 @@ See [this thread](https://github.com/microsoft/onnxruntime/issues/11037) for add
 **Windows Users:**
 Install Microsoft C++ Build Tools by following [this guide](https://github.com/bycloudai/InstallVSBuildToolsWindows) before installing dependencies.
 
-## � Telegram Bot Integration
+## 🤖 Bot Integration (Telegram & Discord)
 
-### Running the Telegram Bot
+This project includes both **Telegram** and **Discord** bots with identical RAG functionality!
 
-After setting up your databases and configuring the bot token:
+### Telegram Bot Setup
+
+**Get Telegram Bot Token:**
+
+1. Message [@BotFather](https://t.me/BotFather) on Telegram
+2. Send `/newbot`
+3. Choose a name and username for your bot
+4. Copy the token and add it to your `.env` file
+
+### Discord Bot Setup
+
+**Get Discord Bot Token:**
+
+1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
+2. Click "New Application" and give it a name
+3. Go to "Bot" section and click "Add Bot"
+4. Copy the token and add it to your `.env` file
+5. **⚠️ IMPORTANT**: Enable "Message Content Intent" in Bot settings:
+   - Scroll down to **"Privileged Gateway Intents"**
+   - Enable **"Message Content Intent"**
+   - Save changes (this is required for the bot to read messages)
+6. Use this invite link (replace CLIENT_ID with your Application ID):
+   ```
+   https://discord.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=2048&scope=bot
+   ```
+
+### Environment Configuration
+
+Update your `.env` file to include both tokens:
+
+```bash
+OPENAI_API_KEY=your_openai_api_key_here
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
+DISCORD_BOT_TOKEN=your_discord_bot_token_here
+```
+
+### Running the Bots
+
+**Telegram Bot:**
 
 ```bash
 python telegram_bot_rag.py
 ```
 
-Expected output:
+**Discord Bot:**
 
+```bash
+python discord_bot_rag.py
 ```
-The bot has sophisticated behavior:
-- 📱 **Groups ONLY**: Only works in public/private groups (Telegram or Discord-style)
-- 🔍 **Smart Mention Detection**: Responds when mentioned (@botname) in groups
-- 🚫 **No Direct Messages**: Politely redirects private DM attempts to group usage
+
+Both bots have sophisticated behavior:
+
+- 📱 **Servers/Groups ONLY**: Only works in public servers/groups
+- 🔍 **Smart Mention Detection**: Responds when mentioned (@botname)
+- 🚫 **No Direct Messages**: Politely redirects private DM attempts to server/group usage
 - 🤖 **RAG Integration**: Searches the documentation database for accurate answers
 - 🧠 **Confidence Evaluation**: Three-tier system (HIGH/MEDIUM/LOW confidence)
-- 🏷️ **Smart Tagging**: Tags organizer @vee19tel when uncertain (LOW confidence)
+- 🏷️ **Smart Tagging**: Tags organizer when uncertain (LOW confidence)
 - 🔗 **Source Links**: Provides clickable links to relevant documentation
 
-🔗 Add the bot to a private group and mention it to test!
-   Example: '@yourbotname How do I organize a hackathon?'
-```
+🔗 Add the bot to a server/group and mention it to test!
+Example: '@yourbotname How do I organize a hackathon?'
 
 ````
 
