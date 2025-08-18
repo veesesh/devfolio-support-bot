@@ -34,7 +34,170 @@ This RAG system:
 - OpenAI API account and API key
 - Virtual environment (recommended)
 
-## 🚀 Quick Start
+## 🚀 Complete Setup Guide for New Users
+
+### Step 1: Clone the Repository
+
+```bash
+git clone https://github.com/yourusername/langchain-rag-tutorial.git
+cd langchain-rag-tutorial
+```
+
+### Step 2: Check Python Version
+
+Ensure you have Python 3.8 or higher:
+
+```bash
+python --version
+# Should show Python 3.8+ (e.g., Python 3.10.12)
+```
+
+If you don't have Python 3.8+, install it from [python.org](https://python.org).
+
+### Step 3: Create Virtual Environment
+
+**⚠️ IMPORTANT: Always use a virtual environment to avoid dependency conflicts!**
+
+```bash
+# Create virtual environment
+python -m venv venv
+
+# Activate it
+# On macOS/Linux:
+source venv/bin/activate
+
+# On Windows:
+venv\Scripts\activate
+
+# You should see (venv) at the beginning of your command prompt
+```
+
+### Step 4: Install Dependencies
+
+```bash
+# Upgrade pip first
+pip install --upgrade pip
+
+# Install core dependencies
+pip install -r requirements.txt
+
+# Install markdown support (required for document processing)
+pip install "unstructured[md]"
+```
+
+**Platform-Specific Notes:**
+
+- **macOS Users**: If you get `onnxruntime` errors, use conda:
+
+  ```bash
+  conda install onnxruntime -c conda-forge
+  ```
+
+- **Windows Users**: Install [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) first if you encounter compilation errors.
+
+### Step 5: Download NLTK Data
+
+```bash
+python -c "import nltk; nltk.download('punkt_tab'); nltk.download('averaged_perceptron_tagger_eng')"
+```
+
+Expected output:
+
+```
+[nltk_data] Downloading package punkt_tab to [path]...
+[nltk_data]   Package punkt_tab is already up-to-date!
+[nltk_data] Downloading package averaged_perceptron_tagger_eng to [path]...
+[nltk_data]   Package averaged_perceptron_tagger_eng is already up-to-date!
+```
+
+### Step 6: Configure API Keys
+
+Create a `.env` file in the project root:
+
+```bash
+# Create the file
+touch .env  # On Windows: type nul > .env
+```
+
+Add your API keys to the `.env` file:
+
+```bash
+# Required for RAG functionality
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Required only if using Telegram bot
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
+```
+
+**Getting API Keys:**
+
+1. **OpenAI API Key** (Required):
+
+   - Go to [OpenAI Platform](https://platform.openai.com/)
+   - Create account → Go to API Keys → Create new secret key
+   - Copy the key (starts with `sk-`)
+
+2. **Telegram Bot Token** (Optional, for bot functionality):
+   - Message [@BotFather](https://t.me/BotFather) on Telegram
+   - Send `/newbot`
+   - Follow instructions to create your bot
+   - Copy the token (format: `123456789:ABCdefGHI...`)
+
+### Step 7: Create Vector Databases
+
+**For Documentation (Recommended to start with):**
+
+```bash
+python create_docs_database.py
+```
+
+Expected output:
+
+```
+Loaded 78 documentation files from data/docs
+Split 78 documents into 257 chunks.
+Saved 257 chunks to chroma_docs.
+```
+
+**For Books (Optional):**
+
+```bash
+python create_database.py
+```
+
+### Step 8: Test the System
+
+**Test Documentation Queries:**
+
+```bash
+python query_docs.py "how to organize a hackathon"
+```
+
+**Test Books Queries:**
+
+```bash
+python query_data.py "How does Alice meet the Mad Hatter?"
+```
+
+### Step 9: Run Telegram Bot (Optional)
+
+If you configured the Telegram bot token:
+
+```bash
+python telegram_bot_rag.py
+```
+
+You should see:
+
+```
+🤖 RAG-integrated Telegram bot is starting...
+📋 Bot behavior:
+   • In private chats: Responds to all messages with RAG
+   • In groups: Only responds when mentioned (@botname)
+   ...
+```
+
+## 🛠️ Quick Start
 
 ### 1. Environment Setup
 
@@ -55,11 +218,11 @@ TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
 ```
 
 **To get a Telegram Bot Token:**
+
 1. Message [@BotFather](https://t.me/BotFather) on Telegram
 2. Send `/newbot`
 3. Choose a name and username for your bot
 4. Copy the token and add it to your `.env` file
-
 
 ### 3. Install Dependencies
 
@@ -121,6 +284,7 @@ python telegram_bot_rag.py
 ```
 
 Expected output:
+
 ```
 🤖 RAG-integrated Telegram bot is starting...
 📋 Bot behavior:
@@ -199,6 +363,3 @@ To change the organizer who gets tagged when the bot is uncertain, modify `teleg
 ```python
 ORGANIZER_USERNAME = "@your_username"  # Change this to your Telegram username
 ```
-
-
-
