@@ -1,4 +1,4 @@
-# Devfolio Support Bot build with LangChain RAG
+# Devfolio Support Bot
 
 A support bot integrated with RAG system using LangChain, OpenAI, and ChromaDB designed for Devfolio, aimed at handling queries and assisting users with common support-related issues.
 
@@ -87,13 +87,13 @@ python discord_bot_rag.py
 2. Create account → API Keys → Create new secret key
 3. Copy the key (starts with `sk-`)
 
-### Telegram Bot Token (Optional)
+### Telegram Bot Token
 
 1. Message [@BotFather](https://t.me/BotFather) on Telegram
 2. Send `/newbot` and follow instructions
 3. Copy the token
 
-### Discord Bot Token (Optional)
+### Discord Bot Token
 
 1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
 2. Create New Application → Bot → Add Bot
@@ -116,7 +116,7 @@ python discord_bot_rag.py
   - macOS: `xcode-select --install`
   - Windows: Install [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
 
-## � Troubleshooting
+### � Troubleshooting
 
 ### Module Import Errors
 
