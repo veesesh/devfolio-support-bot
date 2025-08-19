@@ -26,7 +26,6 @@ logger = logging.getLogger(__name__)
 
 # RAG Configuration
 CHROMA_PATH_DOCS = "chroma_docs"  # Documentation database
-CHROMA_PATH_BOOKS = "chroma"      # Books database
 # Discord mention format for organizer - replace YOUR_USER_ID with actual Discord user ID
 # To get your user ID: Enable Developer Mode in Discord Settings > Advanced > Developer Mode
 # Then right-click your username and select "Copy User ID"
@@ -83,8 +82,8 @@ def evaluate_confidence(query_text: str, context_text: str) -> str:
 def query_rag_system(query_text: str, use_docs: bool = True) -> str:
     """Query the RAG system and return formatted response with sources."""
     try:
-        # Choose database
-        chroma_path = CHROMA_PATH_DOCS if use_docs else CHROMA_PATH_BOOKS
+        # Use documentation database
+        chroma_path = CHROMA_PATH_DOCS
         
         # Prepare the DB
         embedding_function = OpenAIEmbeddings()

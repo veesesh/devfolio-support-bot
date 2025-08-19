@@ -1,311 +1,44 @@
-# LangChain RAG Tutorial with Telegram Bot
+# Devfolio Support Bot build with LangChain RAG
 
-A comprehensive Retrieval-Augmented Generation (RAG) system using LangChain, OpenAI, and ChromaDB to query documents intelligently. This project includes both command-line interfaces and a Telegram bot for interactive Q&A about hackathons and Devfolio platform.
+A support bot integrated with RAG system using LangChain, OpenAI, and ChromaDB designed for Devfolio, aimed at handling queries and assisting users with common support-related issues.
 
-## 🎯 What This Project Does
+Includes command-line interface and Telegram & Discord bots for interactive Q&A about hackathons and Devfolio platform.
 
-This RAG system:
+## 🎯 What This Does
 
-- Loads markdown (.md) and MDX (.mdx) documents from multiple directories
-- Splits them into optimized chunks using LangChain's text splitter with markdown-aware separators
-- Creates embeddings using OpenAI's embedding model
-- Stores embeddings in ChromaDB vector databases
-- Allows natural language queries against the document collections
-- Returns relevant context with clickable links to live documentation
-- Supports both literary texts (Alice in Wonderland) and technical documentation (Devfolio guides)
-- **🤖 Includes a Telegram bot with intelligent confidence evaluation and organizer tagging**
+- Loads documentation files (.md, .mdx) and creates searchable vector database
+- Provides intelligent Q&A with source links to live documentation
+- Includes Telegram & Discord bots with confidence evaluation and organizer tagging
 
-## 📂 Available Document Collections
+## 🚀 Quick Setup
 
-### 1. Books Collection (`data/books/`)
-
-- Contains literary texts like Alice in Wonderland
-- Use `create_database.py` and `query_data.py` for this collection
-
-### 2. Documentation Collection (`data/docs/`)
-
-- Contains hackathon and Devfolio platform documentation
-- Use `create_docs_database.py` and `query_docs.py` for this collection
-- Sources are automatically converted to clickable links to live documentation
-
-## 📋 Prerequisites
+### **1. Prerequisites**
 
 - Python 3.8+
-- OpenAI API account and API key
-- Virtual environment (recommended)
+- Git
+- OpenAI API account
+- Telegram account (for bot)
 
-## 🚀 Complete Setup Guide for New Users
-
-### Step 1: Clone the Repository
-
-```bash
-git clone https://github.com/yourusername/langchain-rag-tutorial.git
-cd langchain-rag-tutorial
-```
-
-### Step 2: Check Python Version
-
-Ensure you have Python 3.8 or higher:
+### **2. Clone & Setup**
 
 ```bash
-python --version
-# Should show Python 3.8+ (e.g., Python 3.10.12)
-```
+git clone https://github.com/veesesh/langchain-rag-tutorial.git
 
-If you don't have Python 3.8+, install it from [python.org](https://python.org).
-
-### Step 3: Create Virtual Environment
-
-**⚠️ IMPORTANT: Always use a virtual environment to avoid dependency conflicts!**
-
-```bash
-# Create virtual environment
 python -m venv venv
-
-# Activate it
-# On macOS/Linux:
-source venv/bin/activate
-
-# On Windows:
-venv\Scripts\activate
-
-# You should see (venv) at the beginning of your command prompt
+source venv/bin/activate  # Windows: venv\Scripts\activate
 ```
 
-### Step 4: Install Dependencies
+### **3. Install Dependencies**
 
 ```bash
-# Upgrade pip first
-pip install --upgrade pip
-
-# Install core dependencies
 pip install -r requirements.txt
-
-# Install markdown support (required for document processing)
 pip install "unstructured[md]"
-```
-
-**Platform-Specific Notes:**
-
-- **macOS Users**: If you get `onnxruntime` errors, use conda:
-
-  ```bash
-  conda install onnxruntime -c conda-forge
-  ```
-
-- **Windows Users**: Install [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) first if you encounter compilation errors.
-
-### Step 5: Download NLTK Data
-
-```bash
 python -c "import nltk; nltk.download('punkt_tab'); nltk.download('averaged_perceptron_tagger_eng')"
 ```
 
-Expected output:
+### **4. Environment Configuration**
 
-```
-[nltk_data] Downloading package punkt_tab to [path]...
-[nltk_data]   Package punkt_tab is already up-to-date!
-[nltk_data] Downloading package averaged_perceptron_tagger_eng to [path]...
-[nltk_data]   Package averaged_perceptron_tagger_eng is already up-to-date!
-```
-
-### Step 6: Configure API Keys
-
-Create a `.env` file in the project root:
-
-```bash
-# Create the file
-touch .env  # On Windows: type nul > .env
-```
-
-Add your API keys to the `.env` file:
-
-```bash
-# Required for RAG functionality
-OPENAI_API_KEY=your_openai_api_key_here
-
-# Required only if using Telegram bot
-TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
-```
-
-**Getting API Keys:**
-
-1. **OpenAI API Key** (Required):
-
-   - Go to [OpenAI Platform](https://platform.openai.com/)
-   - Create account → Go to API Keys → Create new secret key
-   - Copy the key (starts with `sk-`)
-
-2. **Telegram Bot Token** (Optional, for bot functionality):
-   - Message [@BotFather](https://t.me/BotFather) on Telegram
-   - Send `/newbot`
-   - Follow instructions to create your bot
-   - Copy the token (format: `123456789:ABCdefGHI...`)
-
-### Step 7: Create Vector Databases
-
-**For Documentation (Recommended to start with):**
-
-```bash
-python create_docs_database.py
-```
-
-Expected output:
-
-```
-Loaded 78 documentation files from data/docs
-Split 78 documents into 257 chunks.
-Saved 257 chunks to chroma_docs.
-```
-
-**For Books (Optional):**
-
-```bash
-python create_database.py
-```
-
-### Step 8: Test the System
-
-**Test Documentation Queries:**
-
-```bash
-python query_docs.py "how to organize a hackathon"
-```
-
-**Test Books Queries:**
-
-```bash
-python query_data.py "How does Alice meet the Mad Hatter?"
-```
-
-### Step 9: Run Telegram Bot (Optional)
-
-If you configured the Telegram bot token:
-
-```bash
-python telegram_bot_rag.py
-```
-
-You should see:
-
-```
-🤖 RAG-integrated Telegram bot is starting...
-📋 Bot behavior:
-   • Groups ONLY: Responds when mentioned (@botname) in public/private groups
-   • Private DMs: Politely redirects users to use bot in groups
-   ...
-```
-
-## 🛠️ Quick Start
-
-### 1. Environment Setup
-
-Create and activate a virtual environment:
-
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-### 2. OpenAI API Key & Telegram Bot Configuration
-
-Create a `.env` file in the project root and add your API keys:
-
-```bash
-OPENAI_API_KEY=your_openai_api_key_here
-TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
-```
-
-**To get a Telegram Bot Token:**
-
-1. Message [@BotFather](https://t.me/BotFather) on Telegram
-2. Send `/newbot`
-3. Choose a name and username for your bot
-4. Copy the token and add it to your `.env` file
-
-### 3. Install Dependencies
-
-**Option A: Quick Installation (Recommended)**
-
-```bash
-# Install core dependencies
-pip install -r requirements.txt
-
-# Install markdown support
-pip install "unstructured[md]"
-
-# Download required NLTK data
-python -c "import nltk; nltk.download('punkt_tab'); nltk.download('averaged_perceptron_tagger_eng')"
-```
-
-**Note**: The requirements.txt now includes `python-telegram-bot` for the Telegram bot functionality.
-
-**Option B: Manual Installation with Compatibility Fixes**
-
-If you encounter dependency conflicts, upgrade to the latest compatible versions:
-
-```bash
-# Upgrade core packages to resolve compatibility issues
-pip install --upgrade openai langchain langchain-openai langchain-community langchain-text-splitters
-
-# Install remaining dependencies
-pip install chromadb python-dotenv unstructured tiktoken
-
-# Install markdown support
-pip install "unstructured[md]"
-
-# Download NLTK data
-python -c "import nltk; nltk.download('punkt_tab'); nltk.download('averaged_perceptron_tagger_eng')"
-```
-
-### 4. Platform-Specific Installation Notes
-
-**macOS Users:**
-If you encounter `onnxruntime` installation issues:
-
-```bash
-conda install onnxruntime -c conda-forge
-```
-
-See [this thread](https://github.com/microsoft/onnxruntime/issues/11037) for additional help.
-
-**Windows Users:**
-Install Microsoft C++ Build Tools by following [this guide](https://github.com/bycloudai/InstallVSBuildToolsWindows) before installing dependencies.
-
-## 🤖 Bot Integration (Telegram & Discord)
-
-This project includes both **Telegram** and **Discord** bots with identical RAG functionality!
-
-### Telegram Bot Setup
-
-**Get Telegram Bot Token:**
-
-1. Message [@BotFather](https://t.me/BotFather) on Telegram
-2. Send `/newbot`
-3. Choose a name and username for your bot
-4. Copy the token and add it to your `.env` file
-
-### Discord Bot Setup
-
-**Get Discord Bot Token:**
-
-1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
-2. Click "New Application" and give it a name
-3. Go to "Bot" section and click "Add Bot"
-4. Copy the token and add it to your `.env` file
-5. **⚠️ IMPORTANT**: Enable "Message Content Intent" in Bot settings:
-   - Scroll down to **"Privileged Gateway Intents"**
-   - Enable **"Message Content Intent"**
-   - Save changes (this is required for the bot to read messages)
-6. Use this invite link (replace CLIENT_ID with your Application ID):
-   ```
-   https://discord.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=2048&scope=bot
-   ```
-
-### Environment Configuration
-
-Update your `.env` file to include both tokens:
+Create `.env` file:
 
 ```bash
 OPENAI_API_KEY=your_openai_api_key_here
@@ -313,94 +46,120 @@ TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
 DISCORD_BOT_TOKEN=your_discord_bot_token_here
 ```
 
-### Running the Bots
+### **5. Create Database**
 
-**Telegram Bot:**
+```bash
+python create_docs_database.py
+```
+
+### **6. Test the System**
+
+**Command line:**
+
+```bash
+python query_docs.py "how to organize hackathon"
+```
+
+**Telegram bot:**
 
 ```bash
 python telegram_bot_rag.py
 ```
 
-**Discord Bot:**
+**Discord bot:**
 
 ```bash
 python discord_bot_rag.py
 ```
 
-Both bots have sophisticated behavior:
+### **7. Common Issues**
 
-- 📱 **Servers/Groups ONLY**: Only works in public servers/groups
-- 🔍 **Smart Mention Detection**: Responds when mentioned (@botname)
-- 🚫 **No Direct Messages**: Politely redirects private DM attempts to server/group usage
-- 🤖 **RAG Integration**: Searches the documentation database for accurate answers
-- 🧠 **Confidence Evaluation**: Three-tier system (HIGH/MEDIUM/LOW confidence)
-- 🏷️ **Smart Tagging**: Tags organizer when uncertain (LOW confidence)
-- 🔗 **Source Links**: Provides clickable links to relevant documentation
+- **NLTK errors**: Run the nltk download command
+- **API errors**: Check your .env file
+- **Import errors**: Ensure virtual environment is activated
+- **No results**: Make sure database is created first
 
-🔗 Add the bot to a server/group and mention it to test!
-Example: '@yourbotname How do I organize a hackathon?'
+## 🤖 Getting API Keys
 
-````
+### OpenAI API Key (Required)
 
-## 🔧 Common Issues and Troubleshooting
+1. Go to [OpenAI Platform](https://platform.openai.com/)
+2. Create account → API Keys → Create new secret key
+3. Copy the key (starts with `sk-`)
 
-### Environment Variable Issues
+### Telegram Bot Token (Optional)
 
-**Error**: `Did not find openai_api_key, please add an environment variable OPENAI_API_KEY`
+1. Message [@BotFather](https://t.me/BotFather) on Telegram
+2. Send `/newbot` and follow instructions
+3. Copy the token
 
-**Solutions**:
+### Discord Bot Token (Optional)
 
-1. Ensure your `.env` file exists and contains `OPENAI_API_KEY=your_key`
-2. Check that `python-dotenv` is installed
-3. Verify the `load_dotenv()` call is present in your Python files
+1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
+2. Create New Application → Bot → Add Bot
+3. Copy the token
+4. **Enable "Message Content Intent"** in Bot settings
 
-### NLTK Data Missing
+### Documentation Collection (`data/docs/`)
 
-**Error**: `Resource punkt_tab not found` or `Resource averaged_perceptron_tagger_eng not found`
+- Contains hackathon and Devfolio platform documentation
+- Use `create_docs_database.py` and `query_docs.py` for this collection
 
-**Solution**:
+## 📋 Prerequisites
 
-```bash
-python -c "import nltk; nltk.download('punkt_tab'); nltk.download('averaged_perceptron_tagger_eng')"
-````
+- Python 3.8+
+- OpenAI API account and API key
+- Virtual environment (recommended)
+- **System dependencies for ChromaDB:**
+  - Ubuntu/Debian: `sudo apt install python3-dev python3.12-dev build-essential`
+  - CentOS/RHEL: `sudo yum install python3-devel gcc gcc-c++`
+  - macOS: `xcode-select --install`
+  - Windows: Install [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
 
-### Version Compatibility Issues
+## � Troubleshooting
 
-**Error**: `Client.__init__() got an unexpected keyword argument 'proxies'`
-
-**Solution**: Upgrade packages to compatible versions:
-
-```bash
-pip install --upgrade openai langchain langchain-openai langchain-community
-```
-
-### No Results Found
-
-**Error**: `Unable to find matching results.`
-
-**Possible Causes**:
-
-1. Vector database not created - run the appropriate create script first
-2. Query too specific - try broader queries
-3. Relevance threshold too high - documents must be highly relevant
-4. Wrong database - make sure you're using the right query script for your data
-
-### ChromaDB Warnings
-
-**Warning**: Deprecation warnings about `Chroma` class
-
-**Note**: These are warnings about future versions. The code works but consider migrating to `langchain-chroma` package for future compatibility:
+### Module Import Errors
 
 ```bash
-pip install langchain-chroma
+# Make sure virtual environment is activated
+source venv/bin/activate  # Windows: venv\Scripts\activate
 ```
 
-### Telegram Bot Configuration
+### ChromaDB Compilation Errors
 
-#### Setting the Organizer Username
+```bash
+# Install system dependencies first
+# Ubuntu/Debian:
+sudo apt install python3-dev python3.12-dev build-essential
 
-To change the organizer who gets tagged when the bot is uncertain, modify `telegram_bot_rag.py`:
+# macOS:
+xcode-select --install
 
-```python
-ORGANIZER_USERNAME = "@your_username"  # Change this to your Telegram username
+# Then reinstall
+pip install -r requirements.txt
 ```
+
+### API Key Issues
+
+- Check `.env` file exists with correct keys
+- Verify OpenAI API key starts with `sk-`
+- Ensure no extra spaces in `.env` file
+
+### No Search Results
+
+- Make sure database is created: `python create_docs_database.py`
+- Try broader search terms
+- Check `data/docs/` contains documentation files
+
+### Bot Not Responding
+
+- Bot must be mentioned: `@botname question`
+- Discord: Enable "Message Content Intent" in bot settings
+- Check API tokens in `.env` file
+
+## 📚 More Resources
+
+- [LangChain Documentation](https://python.langchain.com/)
+- [OpenAI API Docs](https://platform.openai.com/docs)
+- [Telegram Bot Tutorial](https://core.telegram.org/bots/tutorial)
+- [Discord Bot Guide](https://discordpy.readthedocs.io/)
