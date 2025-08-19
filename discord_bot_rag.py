@@ -44,11 +44,30 @@ Answer the question based only on the following context about hackathons and Dev
 
 Answer the question based on the above context: {question}
 
-IMPORTANT: 
-1. If the context doesn't contain enough specific information to answer the question confidently, respond with "UNCERTAIN"
-2. If you can answer the question but are not completely confident, start your response with "PARTIAL:"
-3. Only give confident answers when the context clearly and specifically addresses the question
-4. If the context doesn't contain enough information, respond with "UNCERTAIN"
+FORMAT YOUR RESPONSE EXACTLY AS FOLLOWS:
+1. Start with a friendly greeting
+2. Provide a short paraphrased answer (1-2 sentences)
+3. Break down the solution into clear steps using "**Steps:**" heading
+4. Use numbered steps (1., 2., 3., etc.)
+6. Do not put title like-> a short answer: and give solution. 
+7. Understand the users POV ( how a human would like to read through the help message)
+
+EXAMPLE FORMAT:
+Hi Builder! 👋 
+
+[Short answer in 1-2 sentences]
+
+**Steps:**
+1. [First step]
+2. [Second step] 
+3. [Third step]
+
+IMPORTANT RULES:
+- If the context doesn't contain enough specific information, respond with "UNCERTAIN"
+- If you can answer but are not completely confident, start with "PARTIAL:"
+- Only give confident answers when context clearly addresses the question
+- Keep steps concise and actionable
+- Use simple, clear language
 """
 
 CONFIDENCE_EVALUATION_PROMPT = """
@@ -150,8 +169,8 @@ def query_rag_system(query_text: str, use_docs: bool = True) -> str:
             confidence_indicator = ""
             if confidence_level == 'MEDIUM':
                 confidence_indicator = f"\n\n💡 **Need more specific details?** Ask {ORGANIZER_USERNAME}"
-            
-            return f"{confidence_prefix}{response_text}\n\n📚 **Sources:**\n{sources_text}{confidence_indicator}"
+
+            return f"{confidence_prefix}{response_text}\n\n**Refer documentation for more details**\n{sources_text}{confidence_indicator}"
         else:
             return f"{confidence_prefix}{response_text}"
 
