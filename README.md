@@ -17,13 +17,12 @@ Includes command-line interface and Telegram & Discord bots for interactive Q&A 
 - Python 3.8+
 - Git
 - OpenAI API account
-- Telegram account (for bot)
 
 ### **2. Clone & Setup**
 
 ```bash
-git clone https://github.com/veesesh/langchain-rag-tutorial.git
-
+git clone https://github.com/veesesh/devfolio-support-bot
+cd devfolio-support-bot
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 ```
@@ -33,7 +32,6 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 ```bash
 pip install -r requirements.txt
 pip install "unstructured[md]"
-python -c "import nltk; nltk.download('punkt_tab'); nltk.download('averaged_perceptron_tagger_eng')"
 ```
 
 ### **4. Environment Configuration**
@@ -74,49 +72,18 @@ python discord_bot_rag.py
 
 ### **7. Common Issues**
 
-- **NLTK errors**: Run the nltk download command
 - **API errors**: Check your .env file
 - **Import errors**: Ensure virtual environment is activated
 - **No results**: Make sure database is created first
 
-## 🤖 Getting API Keys
+## 📚 Documentation Collection
 
-### OpenAI API Key (Required)
-
-1. Go to [OpenAI Platform](https://platform.openai.com/)
-2. Create account → API Keys → Create new secret key
-3. Copy the key (starts with `sk-`)
-
-### Telegram Bot Token
-
-1. Message [@BotFather](https://t.me/BotFather) on Telegram
-2. Send `/newbot` and follow instructions
-3. Copy the token
-
-### Discord Bot Token
-
-1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
-2. Create New Application → Bot → Add Bot
-3. Copy the token
-4. **Enable "Message Content Intent"** in Bot settings
-
-### Documentation Collection (`data/docs/`)
+The `data/docs/` directory:
 
 - Contains hackathon and Devfolio platform documentation
 - Use `create_docs_database.py` and `query_docs.py` for this collection
 
-## 📋 Prerequisites
-
-- Python 3.8+
-- OpenAI API account and API key
-- Virtual environment (recommended)
-- **System dependencies for ChromaDB:**
-  - Ubuntu/Debian: `sudo apt install python3-dev python3.12-dev build-essential`
-  - CentOS/RHEL: `sudo yum install python3-devel gcc gcc-c++`
-  - macOS: `xcode-select --install`
-  - Windows: Install [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
-
-### � Troubleshooting
+## 🔧 Troubleshooting
 
 ### Module Import Errors
 
@@ -139,27 +106,14 @@ xcode-select --install
 pip install -r requirements.txt
 ```
 
-### API Key Issues
+### ChromaDB/ONNX Runtime Issues
 
-- Check `.env` file exists with correct keys
-- Verify OpenAI API key starts with `sk-`
-- Ensure no extra spaces in `.env` file
+If you encounter issues with ONNX Runtime (particularly on macOS):
 
-### No Search Results
+```bash
+# Try this first:
+pip install onnxruntime
 
-- Make sure database is created: `python create_docs_database.py`
-- Try broader search terms
-- Check `data/docs/` contains documentation files
-
-### Bot Not Responding
-
-- Bot must be mentioned: `@botname question`
-- Discord: Enable "Message Content Intent" in bot settings
-- Check API tokens in `.env` file
-
-## 📚 More Resources
-
-- [LangChain Documentation](https://python.langchain.com/)
-- [OpenAI API Docs](https://platform.openai.com/docs)
-- [Telegram Bot Tutorial](https://core.telegram.org/bots/tutorial)
-- [Discord Bot Guide](https://discordpy.readthedocs.io/)
+# If still having issues on macOS, use conda:
+conda install onnxruntime -c conda-forge
+```

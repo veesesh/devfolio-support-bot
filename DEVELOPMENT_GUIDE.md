@@ -114,5 +114,3 @@ discord.py==2.3.2
 3. Update code
 4. Test locally before deploying
 5. Keep requirements.txt updated
-
-This approach will prevent 95% of common deployment and dependency issues!
