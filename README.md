@@ -2,7 +2,7 @@
 
 A support bot integrated with RAG system using LangChain, OpenAI, and ChromaDB designed for Devfolio, aimed at handling queries and assisting users with common support-related issues.
 
-Includes command-line interface and Telegram & Discord bots for interactive Q&A about hackathons and Devfolio platform.
+Includes command-line interface and Telegram/Discord bots for interactive Q&A about hackathons and Devfolio platform.
 
 ## 🎯 What This Does
 
@@ -23,11 +23,6 @@ Includes command-line interface and Telegram & Discord bots for interactive Q&A 
 ```bash
 git clone https://github.com/veesesh/devfolio-support-bot
 cd devfolio-support-bot
-
-## Install uv if you do not have
-pip install uv
-uv init
-uv venv
 ```
 
 ### **4. Environment Configuration**
