@@ -20,25 +20,15 @@ Includes command-line interface and Telegram & Discord bots for interactive Q&A 
 
 ### **2. Clone & Setup**
 
-````bash
+```bash
 git clone https://github.com/veesesh/devfolio-support-bot
 cd devfolio-support-bot
-## Install uv if you do not have
 
-```bash
+## Install uv if you do not have
 pip install uv
 uv init
 uv venv
-````
-
-````
-
-```bash
-# After setting up uv as above, you can run any file directly:
-uv run query_docs.py "how to organize hackathon"
-uv run telegram_bot_rag.py
-uv run discord_bot_rag.py
-````
+```
 
 ### **4. Environment Configuration**
 
