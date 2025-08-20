@@ -47,9 +47,8 @@ FORMAT YOUR RESPONSE EXACTLY AS FOLLOWS:
 2. Provide a short paraphrased answer (1-2 sentences)
 3. Break down the solution into clear steps using "**Steps:**" heading
 4. Use numbered steps (1., 2., 3., etc.)
-5. End with "Refer to the documentation for more details" (sources will be added automatically)
-6. Do not put title like-> a short answer: and give solution. 
-7. Understand the users POV ( how a human would like to read through the help message)
+5. Do not put title like-> a short answer: and give solution. 
+6. Understand the users POV ( how a human would like to read through the help message)
 
 EXAMPLE FORMAT:
 Hi builder! 👋 
