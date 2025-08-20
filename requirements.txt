@@ -9,19 +9,19 @@
 # 3. Virtual environment activated
 
 # Core dependencies
-python-dotenv==1.0.1 # For reading environment variables stored in .env file
-langchain==0.3.27
-langchain-community==0.3.27
-langchain-openai==0.3.30 # For embeddings (compatible with OpenAI 1.100.1)
-langchain-text-splitters==0.3.9
-unstructured==0.14.4 # Document loading
-chromadb==0.5.0 # Vector storage
-openai==1.100.1 # For embeddings (compatible version)
-tiktoken==0.7.0  # For embeddings
+python-dotenv # For reading environment variables stored in .env file
+langchain
+langchain-community
+langchain-openai # For embeddings (compatible with OpenAI 1.100.1)
+langchain-text-splitters
+unstructured # Document loading
+chromadb # Vector storage
+openai # For embeddings (compatible version)
+tiktoken # For embeddings
 
 # Bot integrations
-python-telegram-bot==21.5 # For Telegram bot integration 
-discord.py==2.3.2 # For Discord bot integration
+python-telegram-bot # For Telegram bot integration
+discord.py # For Discord bot integration
 
 # Additional markdown support - install after main requirements
 # Run: pip install "unstructured[md]" after installing the above 
