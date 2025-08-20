@@ -20,19 +20,25 @@ Includes command-line interface and Telegram & Discord bots for interactive Q&A 
 
 ### **2. Clone & Setup**
 
-```bash
+````bash
 git clone https://github.com/veesesh/devfolio-support-bot
 cd devfolio-support-bot
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-```
-
-### **3. Install Dependencies**
+## Install uv if you do not have
 
 ```bash
-pip install -r requirements.txt
-pip install "unstructured[md]"
-```
+pip install uv
+uv init
+uv venv
+````
+
+````
+
+```bash
+# After setting up uv as above, you can run any file directly:
+uv run query_docs.py "how to organize hackathon"
+uv run telegram_bot_rag.py
+uv run discord_bot_rag.py
+````
 
 ### **4. Environment Configuration**
 
@@ -47,7 +53,7 @@ DISCORD_BOT_TOKEN=your_discord_bot_token_here
 ### **5. Create Database**
 
 ```bash
-python create_docs_database.py
+uv run create_docs_database.py
 ```
 
 ### **6. Test the System**
@@ -55,19 +61,19 @@ python create_docs_database.py
 **Command line:**
 
 ```bash
-python query_docs.py "how to organize hackathon"
+uv run query_docs.py "how to organize hackathon"
 ```
 
 **Telegram bot:**
 
 ```bash
-python telegram_bot_rag.py
+uv run telegram_bot_rag.py
 ```
 
 **Discord bot:**
 
 ```bash
-python discord_bot_rag.py
+uv run discord_bot_rag.py
 ```
 
 ### **7. Common Issues**
@@ -75,45 +81,3 @@ python discord_bot_rag.py
 - **API errors**: Check your .env file
 - **Import errors**: Ensure virtual environment is activated
 - **No results**: Make sure database is created first
-
-## 📚 Documentation Collection
-
-The `data/docs/` directory:
-
-- Contains hackathon and Devfolio platform documentation
-- Use `create_docs_database.py` and `query_docs.py` for this collection
-
-## 🔧 Troubleshooting
-
-### Module Import Errors
-
-```bash
-# Make sure virtual environment is activated
-source venv/bin/activate  # Windows: venv\Scripts\activate
-```
-
-### ChromaDB Compilation Errors
-
-```bash
-# Install system dependencies first
-# Ubuntu/Debian:
-sudo apt install python3-dev python3.12-dev build-essential
-
-# macOS:
-xcode-select --install
-
-# Then reinstall
-pip install -r requirements.txt
-```
-
-### ChromaDB/ONNX Runtime Issues
-
-If you encounter issues with ONNX Runtime (particularly on macOS):
-
-```bash
-# Try this first:
-pip install onnxruntime
-
-# If still having issues on macOS, use conda:
-conda install onnxruntime -c conda-forge
-```
