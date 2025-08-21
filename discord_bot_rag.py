@@ -35,6 +35,27 @@ ORGANIZER_USERNAME = "<@845015423207473152>"  # Replace YOUR_USER_ID with actual
 CONFIDENCE_THRESHOLD = 0.65
 MIN_CONTEXT_LENGTH = 200  # Minimum context length for confident answers
 
+# Prompt for generating multiple queries
+QUERY_GENERATION_TEMPLATE = """
+You are an expert at generating search queries for a Devfolio hackathon documentation knowledge base.
+
+Given the user's original question, generate up to 3 diverse but related search queries that would help retrieve comprehensive information to answer the question.
+
+Make the queries:
+1. More specific and focused on different aspects
+2. Use different keywords and phrasings
+3. Be concise but descriptive
+
+Original Question: {original_query}
+
+Generate queries in this format:
+1. [query 1]
+2. [query 2]
+3. [query 3]
+
+Only generate the numbered list, no other text.
+"""
+
 PROMPT_TEMPLATE = """
 Answer the question based only on the following context about hackathons and Devfolio platform:
 
@@ -108,10 +129,63 @@ def query_rag_system(query_text: str, use_docs: bool = True) -> str:
         embedding_function = OpenAIEmbeddings()
         db = Chroma(persist_directory=chroma_path, embedding_function=embedding_function)
 
-        # Search the DB
-        results = db.similarity_search_with_relevance_scores(query_text, k=4)
-        if len(results) == 0 or results[0][1] < CONFIDENCE_THRESHOLD:
+        # First try with original query to check confidence
+        print("Testing initial query confidence...")
+        initial_results = db.similarity_search_with_relevance_scores(query_text, k=4)
+        
+        # Check if we got high confidence results from initial query
+        high_confidence_threshold = 0.65  # Threshold for considering a result high confidence
+        has_high_confidence = any(score > high_confidence_threshold for _, score in initial_results)
+        
+        if not has_high_confidence:
+            print("No high-confidence matches found for the initial query.")
+            # For low confidence, directly return without generating multiple queries
             return f"🤔 I couldn't find relevant information for your question in the documentation.\n\n{ORGANIZER_USERNAME} Could you help with this question?"
+            
+        # Since we have high confidence matches, generate up to 3 related queries
+        prompt_template = ChatPromptTemplate.from_template(QUERY_GENERATION_TEMPLATE)
+        prompt = prompt_template.format(original_query=query_text)
+        
+        model = ChatOpenAI(temperature=0.3)
+        response = model.invoke(prompt).content
+        
+        # Parse the queries (up to 3)
+        queries = []
+        lines = response.strip().split('\n')
+        for line in lines:
+            line = line.strip()
+            if line and (line[0].isdigit() or line.startswith('•') or line.startswith('-')):
+                query = line.split('.', 1)[-1].strip().lstrip('•-').strip()
+                if query and len(query) > 3:
+                    queries.append(query)
+                if len(queries) >= 3:  # Limit to 3 queries
+                    break
+        
+        # Always include original query
+        if query_text not in queries:
+            queries.insert(0, query_text)
+        
+        # Search with all queries
+        all_results = []
+        seen_content = set()
+        
+        for query in queries:
+            results = db.similarity_search_with_relevance_scores(query, k=3)  # Reduced from 4 to 3 per query
+            for doc, score in results:
+                content_hash = hash(doc.page_content[:100])
+                if content_hash not in seen_content and score > 0.4:
+                    seen_content.add(content_hash)
+                    all_results.append((doc, score))
+        
+        # Sort by relevance score and get only good results
+        all_results.sort(key=lambda x: x[1], reverse=True)
+        good_results = [(doc, score) for doc, score in all_results if score > 0.5]
+        
+        if not good_results:
+            return f"🤔 I couldn't find good matches for your question in the documentation.\n\n{ORGANIZER_USERNAME} Could you help with this question?"
+            
+        # Use only top 4 results for context
+        results = good_results[:4]
 
         # Prepare context
         context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])

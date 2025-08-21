@@ -25,7 +25,7 @@ CHROMA_PATH = "chroma_docs"  # Documentation database
 QUERY_GENERATION_TEMPLATE = """
 You are an expert at generating search queries for a Devfolio hackathon documentation knowledge base.
 
-Given the user's original question, generate 3-5 diverse but related search queries that would help retrieve comprehensive information to answer the question.
+Given the user's original question, generate up to 3 diverse but related search queries that would help retrieve comprehensive information to answer the question.
 
 Make the queries:
 1. More specific and focused on different aspects
@@ -39,8 +39,6 @@ Generate queries in this format:
 1. [query 1]
 2. [query 2]
 3. [query 3]
-4. [query 4]
-5. [query 5]
 
 Only generate the numbered list, no other text.
 """
@@ -164,24 +162,48 @@ def main():
     db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
 
     # Step 1: Generate multiple related queries
-    print("Step 1: Generating multiple related queries...")
-    generated_queries = generate_multiple_queries(query_text)
+    # First try with original query to check confidence
+    print("Step 1: Testing initial query confidence...")
+    initial_results = retrieve_for_queries([query_text], db, k_per_query)
     
-    if len(generated_queries) == 0:
-        print("Failed to generate queries. Exiting.")
-        return
-
-    # Step 2: Retrieve documents for each query
+    # Check if we got high confidence results from initial query
+    high_confidence_threshold = 0.65  # Threshold for considering a result high confidence
+    has_high_confidence = any(score > high_confidence_threshold for _, score, _ in initial_results)
+    
+    if not has_high_confidence:
+        print("\nNo high-confidence matches found for the initial query.")
+        print("Skipping multi-query generation to provide faster response.")
+        all_results = initial_results
+    else:
+        # Continue with multiple queries since we have high confidence matches
+        print("\nStep 1: Generating multiple related queries...")
+        generated_queries = generate_multiple_queries(query_text)
+        
+        if len(generated_queries) == 0:
+            print("Failed to generate queries. Using initial results only.")
+            all_results = initial_results
+        else:
+            # Step 2: Retrieve documents for each query
+            print("Step 2: Retrieving documents...")
+            all_results = retrieve_for_queries(generated_queries, db, k_per_query)
     print("Step 2: Retrieving documents...")
     all_results = retrieve_for_queries(generated_queries, db, k_per_query)
 
-    if len(all_results) == 0:
-        print("Unable to find any matching results across all queries.")
-        print("You might want to try:")
+    # Check if we have any good matches
+    good_results = [r for r in all_results if r[1] > 0.5]  # Filter results with score > 0.5
+    
+    if len(good_results) == 0:
+        print("Unable to find any relevant matches in the documentation.")
+        print("\nFINAL RESPONSE:")
+        print("=" * 50)
+        print("I apologize, but I couldn't find any relevant information in the Devfolio documentation to answer your question. You might want to try:")
         print("- Rephrasing your question")
         print("- Using more specific keywords")
         print("- Asking about hackathon organization, Devfolio features, or application processes")
         return
+        
+    # Use only good results for response
+    all_results = good_results
 
     # Limit to max_docs for context window management
     limited_results = all_results[:max_docs]
