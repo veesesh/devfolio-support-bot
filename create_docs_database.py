@@ -52,7 +52,7 @@ def load_documents():
 
 def split_text(documents: list[Document]):
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1200,     # Increased for better context preservation
+        chunk_size=1600,     # Increased for better context preservation
         chunk_overlap=500,   # Larger overlap to maintain continuity
         length_function=len,
         add_start_index=True,
