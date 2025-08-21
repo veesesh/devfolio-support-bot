@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """
-Telegram Bot with RAG Integration - Step 3
-This version integrates with your RAG system and only responds when mentioned in groups.
+Telegram Bot with RAG Integration - Test Version
+This version handles both DMs and group messages differently.
 """
 
 import logging
-import argparse
 import os
 from dotenv import load_dotenv
 from telegram import Update
@@ -34,7 +33,7 @@ ORGANIZER_USERNAME = "@vee19tel"  # Organizer to tag when uncertain
 CONFIDENCE_THRESHOLD = 0.65
 MIN_CONTEXT_LENGTH = 200  # Minimum context length for confident answers
 
-# Prompt for generating multiple queries
+# Keep existing prompt templates
 QUERY_GENERATION_TEMPLATE = """
 You are an expert at generating search queries for a Devfolio hackathon documentation knowledge base.
 
@@ -118,7 +117,7 @@ def evaluate_confidence(query_text: str, context_text: str) -> str:
         logger.error(f"Confidence evaluation error: {e}")
         return 'LOW'
 
-def query_rag_system(query_text: str, use_docs: bool = True) -> str:
+def query_rag_system(query_text: str, is_private: bool = False) -> str:
     """Query the RAG system and return formatted response with sources."""
     try:
         # Use documentation database
@@ -129,7 +128,6 @@ def query_rag_system(query_text: str, use_docs: bool = True) -> str:
         db = Chroma(persist_directory=chroma_path, embedding_function=embedding_function)
 
         # First try with original query to check confidence
-        print("Testing initial query confidence...")
         initial_results = db.similarity_search_with_relevance_scores(query_text, k=4)
         
         # Check if we got high confidence results from initial query
@@ -137,18 +135,21 @@ def query_rag_system(query_text: str, use_docs: bool = True) -> str:
         has_high_confidence = any(score > high_confidence_threshold for _, score in initial_results)
         
         if not has_high_confidence:
-            print("No high-confidence matches found for the initial query.")
-            # For low confidence, directly return without generating multiple queries
-            return f"🤔 I couldn't find relevant information for your question in the documentation.\n\n{ORGANIZER_USERNAME} Could you help with this question?"
+            if is_private:
+                return ("🤔 I couldn't find relevant information for your question in the documentation.\n\n"
+                       "💡 For better support, consider asking in our public groups where community "
+                       "members and organizers can help with more context!")
+            else:
+                return f"🤔 I couldn't find relevant information for your question in the documentation.\n\n{ORGANIZER_USERNAME} Could you help with this question?"
             
-        # Since we have high confidence matches, generate up to 3 related queries
+        # Generate multiple queries
         prompt_template = ChatPromptTemplate.from_template(QUERY_GENERATION_TEMPLATE)
         prompt = prompt_template.format(original_query=query_text)
         
         model = ChatOpenAI(temperature=0.3)
         response = model.invoke(prompt).content
         
-        # Parse the queries (up to 3)
+        # Parse queries
         queries = []
         lines = response.strip().split('\n')
         for line in lines:
@@ -157,7 +158,7 @@ def query_rag_system(query_text: str, use_docs: bool = True) -> str:
                 query = line.split('.', 1)[-1].strip().lstrip('•-').strip()
                 if query and len(query) > 3:
                     queries.append(query)
-                if len(queries) >= 3:  # Limit to 3 queries
+                if len(queries) >= 3:
                     break
         
         # Always include original query
@@ -169,7 +170,7 @@ def query_rag_system(query_text: str, use_docs: bool = True) -> str:
         seen_content = set()
         
         for query in queries:
-            results = db.similarity_search_with_relevance_scores(query, k=3)  # Reduced from 4 to 3 per query
+            results = db.similarity_search_with_relevance_scores(query, k=3)
             for doc, score in results:
                 content_hash = hash(doc.page_content[:100])
                 if content_hash not in seen_content and score > 0.4:
@@ -181,38 +182,47 @@ def query_rag_system(query_text: str, use_docs: bool = True) -> str:
         good_results = [(doc, score) for doc, score in all_results if score > 0.5]
         
         if not good_results:
-            return f"🤔 I couldn't find good matches for your question in the documentation.\n\n{ORGANIZER_USERNAME} Could you help with this question?"
+            if is_private:
+                return ("🤔 I couldn't find good matches for your question in the documentation.\n\n"
+                       "💡 Try asking in our public groups for better assistance!")
+            else:
+                return f"🤔 I couldn't find good matches for your question in the documentation.\n\n{ORGANIZER_USERNAME} Could you help with this question?"
             
         # Use only top 4 results for context
         results = good_results[:4]
-
-        # Prepare context
         context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
         
         # Check context length
         if len(context_text) < MIN_CONTEXT_LENGTH:
-            return f"🤔 I found limited information for your question.\n\n{ORGANIZER_USERNAME} This might need human expertise!"
+            if is_private:
+                return ("🤔 I found limited information for your question.\n\n"
+                       "💡 For more detailed help, consider asking in our public groups!")
+            else:
+                return f"🤔 I found limited information for your question.\n\n{ORGANIZER_USERNAME} This might need human expertise!"
         
         # Evaluate confidence
         confidence_level = evaluate_confidence(query_text, context_text)
         logger.info(f"Confidence level: {confidence_level}")
         
-        # If confidence is low, tag organizer
         if confidence_level == 'LOW':
-            return f"🤔 I found some information but I'm not confident about the answer to avoid giving incorrect details.\n\n{ORGANIZER_USERNAME} Could you help with this question: '{query_text}'?"
-
-        # Prepare context and query
-        context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
-        prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
-        prompt = prompt_template.format(context=context_text, question=query_text)
+            if is_private:
+                return ("🤔 I found some information but I'm not confident enough to provide an accurate answer.\n\n"
+                       "💡 For better assistance, try asking this question in our public groups!")
+            else:
+                return f"🤔 I found some information but I'm not confident about the answer.\n\n{ORGANIZER_USERNAME} Could you help with this question: '{query_text}'?"
 
         # Get AI response
+        prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
+        prompt = prompt_template.format(context=context_text, question=query_text)
         model = ChatOpenAI()
         response_text = model.invoke(prompt).content
         
-        # Check if AI is uncertain
         if "UNCERTAIN" in response_text:
-            return f"🤔 I don't have enough specific information to answer your question confidently.\n\n{ORGANIZER_USERNAME} Could you help with: '{query_text}'?"
+            if is_private:
+                return ("🤔 I don't have enough specific information to answer your question confidently.\n\n"
+                       "💡 For better assistance, consider asking in our public groups!")
+            else:
+                return f"🤔 I don't have enough specific information to answer your question confidently.\n\n{ORGANIZER_USERNAME} Could you help with: '{query_text}'?"
         
         # Handle partial confidence
         confidence_prefix = ""
@@ -222,40 +232,45 @@ def query_rag_system(query_text: str, use_docs: bool = True) -> str:
                 confidence_prefix = "⚠️ *Partial answer* (some details might be missing):\n\n"
 
         # Format sources for Telegram
-        if use_docs:
-            base_url = "https://guide.devfolio.co/"
-            sources = []
-            for doc, _score in results:
-                source_path = doc.metadata.get("source", "")
-                if source_path:
-                    url_path = source_path.replace("data/", "").replace(".mdx", "").replace(".md", "")
-                    full_url = base_url + url_path
-                    file_name = source_path.split("/")[-1].replace(".mdx", "").replace(".md", "")
-                    readable_title = file_name.replace("-", " ").title()
-                    sources.append(f"• [{readable_title}]({full_url})")
-            
-            # Remove duplicates
-            unique_sources = list(dict.fromkeys(sources))
-            sources_text = "\n".join(unique_sources[:3])  # Limit to 3 sources for Telegram
-            
-            # Add confidence indicator
-            confidence_indicator = ""
-            if confidence_level == 'MEDIUM':
-                confidence_indicator = "\n\n💡 *If you need more specific details, feel free to ask* " + ORGANIZER_USERNAME
-            
-            return f"{confidence_prefix}{response_text}\n\n**Refer:** docs for more details\n{sources_text}{confidence_indicator}"
-        else:
-            return f"{confidence_prefix}{response_text}"
+        base_url = "https://guide.devfolio.co/"
+        sources = []
+        for doc, _score in results:
+            source_path = doc.metadata.get("source", "")
+            if source_path:
+                url_path = source_path.replace("data/", "").replace(".mdx", "").replace(".md", "")
+                full_url = base_url + url_path
+                file_name = source_path.split("/")[-1].replace(".mdx", "").replace(".md", "")
+                readable_title = file_name.replace("-", " ").title()
+                sources.append(f"• [{readable_title}]({full_url})")
+        
+        # Remove duplicates
+        unique_sources = list(dict.fromkeys(sources))
+        sources_text = "\n".join(unique_sources[:3])
+        
+        # Add confidence indicator based on context
+        confidence_indicator = ""
+        if confidence_level == 'MEDIUM':
+            if is_private:
+                confidence_indicator = "\n\n💡 Need more specific details? Try asking in our public groups!"
+            else:
+                confidence_indicator = f"\n\n💡 *Need more specific details?* Ask {ORGANIZER_USERNAME}"
+        
+        return f"{confidence_prefix}{response_text}\n\n**Refer:** docs for more details\n{sources_text}{confidence_indicator}"
 
     except Exception as e:
         logger.error(f"RAG query error: {e}")
-        return f"❌ Sorry, I encountered an error while processing your question.\n\n{ORGANIZER_USERNAME} Could you help with this technical issue?"
+        if is_private:
+            return ("❌ Sorry, I encountered an error while processing your question.\n\n"
+                   "Please try again later or ask in our public groups for assistance!")
+        else:
+            return f"❌ Sorry, I encountered an error while processing your question.\n\n{ORGANIZER_USERNAME} Could you help with this technical issue?"
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle incoming messages."""
     user = update.effective_user
     message_text = update.message.text
     chat_type = update.effective_chat.type
+    is_private = chat_type == 'private'
     
     # Get bot info
     bot_username = context.bot.username
@@ -263,20 +278,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     # Log the message
     logger.info(f"Message from {user.first_name} in {chat_type}: {message_text}")
     
-    # Only respond in groups - ignore private messages
-    if chat_type == 'private':
-        logger.info(f"Ignoring private message from {user.first_name}")
-        await update.message.reply_text(
-            "👋 Hi! I only work in groups to help with hackathon questions.\n\n"
-            
-            "💡 It’s always recommended to ask questions in public — it helps others who might have the same question and keeps the conversation more engaging.  \n\n"
-            "🙌 And if you ever get stuck, someone from our team will be happy to jump in and help with the context."
-            f"Example: @{bot_username} How do I organize a hackathon?"
-        )
-        return
-    
     # In groups, only respond if bot is mentioned
-    if chat_type in ['group', 'supergroup']:
+    if not is_private:
         bot_mentioned = False
         
         # Check for @botusername mention
@@ -296,16 +299,23 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     
     # If no question provided
     if not message_text.strip():
-        response = f"Hello {user.first_name}! Ask me anything about hackathons, Devfolio, or project development!"
+        if is_private:
+            response = (
+                f"Hello {user.first_name}! 👋\n\n"
+                "I'm here to help with your Devfolio and hackathon questions. What would you like to know?\n"
+                "💡 Pro tip: You can also ask in our public groups for community support!"
+            )
+        else:
+            response = f"Hello {user.first_name}! Ask me anything about hackathons, Devfolio, or project development!"
         await update.message.reply_text(response)
         return
     
     # Show typing indicator
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
     
-    # Query RAG system
+    # Query RAG system with context awareness
     logger.info(f"Querying RAG system with: {message_text}")
-    response = query_rag_system(message_text, use_docs=True)
+    response = query_rag_system(message_text, is_private=is_private)
     
     # Log to webhook
     user_data = {
@@ -356,17 +366,21 @@ def main() -> None:
     application.add_error_handler(error_handler)
 
     # Start the bot
-    logger.info("Starting RAG-integrated bot...")
-    print("🤖 RAG-integrated Telegram bot is starting...")
+    logger.info("Starting RAG-integrated test bot...")
+    print("🤖 RAG-integrated Telegram bot (Test Version) is starting...")
     print("📋 Bot behavior:")
-    print("   • Groups ONLY: Responds when mentioned (@botname) in public/private groups")
-    print("   • Private DMs: Politely redirects users to use bot in groups")
+    print("   • Responds in both private messages and groups")
+    print("   • Group messages: Responds when mentioned (@botname)")
+    print("   • Private messages: Direct responses with suggestions for public groups")
     print("   • Searches Devfolio documentation for answers")
     print("   • Provides clickable source links")
-    print("   • Tags organizer (@vee19tel) when uncertain")
+    print("   • Context-aware responses:")
+    print("     - Groups: Tags organizer when uncertain")
+    print("     - DMs: Suggests asking in public groups")
     print("   • Uses confidence evaluation to avoid wrong answers")
-    print("\n🔗 Add the bot to a group and mention it to test!")
-    print("   Example: '@yourbotname How do I organize a hackathon?'")
+    print("\n✅ Bot is ready for testing!")
+    print("🔗 Try in private chat or add to a group")
+    print("   Group example: '@yourbotname How do I organize a hackathon?'")
     
     # Run the bot until the user presses Ctrl-C
     application.run_polling(allowed_updates=Update.ALL_TYPES)
