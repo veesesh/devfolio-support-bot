@@ -14,6 +14,7 @@ from langchain_community.vectorstores import Chroma
 from langchain_openai import OpenAIEmbeddings
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
+from webhook_logger import log_interaction
 
 # Load environment variables
 load_dotenv()
@@ -305,6 +306,25 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     # Query RAG system
     logger.info(f"Querying RAG system with: {message_text}")
     response = query_rag_system(message_text, use_docs=True)
+    
+    # Log to webhook
+    user_data = {
+        "name": f"{user.first_name} {user.last_name if user.last_name else ''} (@{user.username})" if user.username else str(user.id),
+        "id": user.id
+    }
+    
+    metadata = {
+        "chat_type": chat_type,
+        "chat_title": update.effective_chat.title if update.effective_chat.title else None
+    }
+    
+    await log_interaction(
+        platform="telegram",
+        user_data=user_data,
+        query=message_text,
+        response=response,
+        metadata=metadata
+    )
     
     # Send response
     await update.message.reply_text(response, parse_mode='Markdown', disable_web_page_preview=True)

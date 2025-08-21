@@ -13,6 +13,7 @@ from langchain_community.vectorstores import Chroma
 from langchain_openai import OpenAIEmbeddings
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
+from webhook_logger import log_interaction
 
 # Load environment variables
 load_dotenv()
@@ -324,6 +325,25 @@ async def on_message(message):
         # Query RAG system
         logger.info(f"Querying RAG system with: {content}")
         response = query_rag_system(content, use_docs=True)
+        
+        # Log to webhook
+        user_data = {
+            "name": str(message.author),
+            "id": message.author.id
+        }
+        
+        metadata = {
+            "server": message.guild.name if message.guild else "DM",
+            "channel": message.channel.name if hasattr(message.channel, 'name') else "Direct Message"
+        }
+        
+        await log_interaction(
+            platform="discord",
+            user_data=user_data,
+            query=content,
+            response=response,
+            metadata=metadata
+        )
     
     # Send response (Discord handles markdown automatically)
     try:
