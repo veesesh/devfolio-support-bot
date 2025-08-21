@@ -25,6 +25,10 @@ git clone https://github.com/veesesh/devfolio-support-bot
 cd devfolio-support-bot
 ```
 
+### **3. Install UV Package Manager**
+
+install uv package manager according to your os
+
 ### **4. Environment Configuration**
 
 Create `.env` file:
