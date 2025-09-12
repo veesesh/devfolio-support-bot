@@ -55,7 +55,8 @@ Only generate the numbered list, no other text.
 """
 
 PROMPT_TEMPLATE = """
-Answer the question based only on the following context about hackathons and Devfolio platform:
+You are a Support Assistant for the Devfolio. Devfolio is an online platform that supports hackathons — for both participants (hackers) and organizers.  
+You are responding to questions as a member of the Devfolio Support Staff. Answer the question based only on the following context about hackathons and Devfolio platform:
 
 {context}
 
@@ -63,30 +64,15 @@ Answer the question based only on the following context about hackathons and Dev
 
 Answer the question based on the above context: {question}
 
-FORMAT YOUR RESPONSE EXACTLY AS FOLLOWS:
-1. Start with a friendly greeting (Hi Builder! 👋)
-2. Provide a short paraphrased answer (1-2 sentences)
-3. Break down the solution into clear steps using "**Steps:**" heading
-4. Use numbered steps (1., 2., 3., etc.)
-5. Do not put title like-> a short answer: and give solution. 
-6. Understand the users POV ( how a human would like to read through the help message)
-
-EXAMPLE FORMAT:
-Hi builder! 👋 
-
-[Short answer in 1-2 sentences]
-
-**Steps:**
-1. [First step]
-2. [Second step] 
-3. [Third step]
-
-IMPORTANT RULES:
-- If the context doesn't contain enough specific information, respond with "UNCERTAIN"
-- If you can answer but are not completely confident, start with "PARTIAL:"
-- Only give confident answers when context clearly addresses the question
-- Keep steps concise and actionable
-- Use simple, clear language
+IMPORTANT: 
+1. Only give confident answers when the context clearly and specifically addresses the question.
+2. If you can answer the question but are not completely confident, start your response with "PARTIAL:"
+3. Do not make up information or provide answers based on assumptions i.e Do not use outside answers.
+4. Keep answers concise and to the point. 
+5. Give answers that is readable to a human and is helpful to understand. 
+6. Do not use words like "context". They are just terms I am using to form questions for you. The participants or organisers should not see this in your response
+7. Give answers in numbered points. 
+8. 
 """
 
 CONFIDENCE_EVALUATION_PROMPT = """
@@ -98,7 +84,7 @@ Question: {question}
 Rate your confidence level:
 - HIGH: Context directly and comprehensively answers the question
 - MEDIUM: Context partially answers the question but some details may be missing
-- LOW: Context contains little relevant information or is too general
+- LOW: Context contains no relevant information or is too general
 
 Respond with only: HIGH, MEDIUM, or LOW
 """
@@ -109,7 +95,7 @@ def evaluate_confidence(query_text: str, context_text: str) -> str:
         prompt_template = ChatPromptTemplate.from_template(CONFIDENCE_EVALUATION_PROMPT)
         prompt = prompt_template.format(context=context_text, question=query_text)
         
-        model = ChatOpenAI(temperature=0)  # Lower temperature for more consistent evaluation
+        model = ChatOpenAI(model="gpt-4.1",temperature=0)  # Lower temperature for more consistent evaluation
         confidence_level = model.invoke(prompt).content.strip().upper()
         
         return confidence_level if confidence_level in ['HIGH', 'MEDIUM', 'LOW'] else 'LOW'
@@ -138,15 +124,15 @@ def query_rag_system(query_text: str, is_private: bool = False) -> str:
             if is_private:
                 return ("🤔 I couldn't find relevant information for your question in the documentation.\n\n"
                        "💡 For better support, consider asking in our public groups where community "
-                       "members and organizers can help with more context!")
+                       "members and organizers can help with more context! \n\n In the meantime, You can refer to this guide: https://guide.devfolio.co/")
             else:
-                return f"🤔 I couldn't find relevant information for your question in the documentation.\n\n{ORGANIZER_USERNAME} Could you help with this question?"
-            
+                return f"🤔 I couldn't find relevant information for your question in the documentation.\n\n{ORGANIZER_USERNAME} Could you help with this question? \n\n In the meantime, Please refer to this guide: https://guide.devfolio.co/"
+
         # Generate multiple queries
         prompt_template = ChatPromptTemplate.from_template(QUERY_GENERATION_TEMPLATE)
         prompt = prompt_template.format(original_query=query_text)
         
-        model = ChatOpenAI(temperature=0.3)
+        model = ChatOpenAI(model="gpt-4.1", temperature=0.3)
         response = model.invoke(prompt).content
         
         # Parse queries
@@ -184,22 +170,22 @@ def query_rag_system(query_text: str, is_private: bool = False) -> str:
         if not good_results:
             if is_private:
                 return ("🤔 I couldn't find good matches for your question in the documentation.\n\n"
-                       "💡 Try asking in our public groups for better assistance!")
+                       "💡 Try asking in our public groups for better assistance! \n\n In the meantime, Please refer to this guide: https://guide.devfolio.co/")
             else:
-                return f"🤔 I couldn't find good matches for your question in the documentation.\n\n{ORGANIZER_USERNAME} Could you help with this question?"
-            
+                return f"🤔 I couldn't find good matches for your question in the documentation. \n\n{ORGANIZER_USERNAME} Could you help with this question? \n\n In the meantime, Please refer to this guide: https://guide.devfolio.co/."
+
         # Use only top 4 results for context
-        results = good_results[:4]
+        results = good_results[:8]
         context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
         
         # Check context length
         if len(context_text) < MIN_CONTEXT_LENGTH:
             if is_private:
                 return ("🤔 I found limited information for your question.\n\n"
-                       "💡 For more detailed help, consider asking in our public groups!")
+                       "💡 For more detailed help, consider asking in our public groups!\n\nIn the meantime, Please refer to this guide: https://guide.devfolio.co/")
             else:
-                return f"🤔 I found limited information for your question.\n\n{ORGANIZER_USERNAME} This might need human expertise!"
-        
+                return f"🤔 I found limited information for your question.\n\n{ORGANIZER_USERNAME} This might need human expertise! \n\nIn the meantime, Please refer to this guide: https://guide.devfolio.co/"
+
         # Evaluate confidence
         confidence_level = evaluate_confidence(query_text, context_text)
         logger.info(f"Confidence level: {confidence_level}")
@@ -207,23 +193,22 @@ def query_rag_system(query_text: str, is_private: bool = False) -> str:
         if confidence_level == 'LOW':
             if is_private:
                 return ("🤔 I found some information but I'm not confident enough to provide an accurate answer.\n\n"
-                       "💡 For better assistance, try asking this question in our public groups!")
+                       "💡 For better assistance, try asking this question in our public groups!\n\nIn the meantime, Please refer to this guide: https://guide.devfolio.co/")
             else:
-                return f"🤔 I found some information but I'm not confident about the answer.\n\n{ORGANIZER_USERNAME} Could you help with this question: '{query_text}'?"
+                return f"🤔 I found some information but I'm not confident about the answer.\n\n{ORGANIZER_USERNAME} Could you help with this question? \n\nIn the meantime, Please refer to this guide: https://guide.devfolio.co/"
 
         # Get AI response
         prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
         prompt = prompt_template.format(context=context_text, question=query_text)
-        model = ChatOpenAI()
+        model = ChatOpenAI(model="gpt-4.1")
         response_text = model.invoke(prompt).content
         
         if "UNCERTAIN" in response_text:
             if is_private:
                 return ("🤔 I don't have enough specific information to answer your question confidently.\n\n"
-                       "💡 For better assistance, consider asking in our public groups!")
+                       "💡 For better assistance, consider asking in our public groups!\n\nIn the meantime, Please refer to this guide: https://guide.devfolio.co/")
             else:
-                return f"🤔 I don't have enough specific information to answer your question confidently.\n\n{ORGANIZER_USERNAME} Could you help with: '{query_text}'?"
-        
+                return f"🤔 I don't have enough specific information to answer your question confidently.\n\n{ORGANIZER_USERNAME} Could you help with one?\n\nIn the meantime, Please refer to this guide: https://guide.devfolio.co/"  
         # Handle partial confidence
         confidence_prefix = ""
         if response_text.startswith("PARTIAL:"):
@@ -245,15 +230,15 @@ def query_rag_system(query_text: str, is_private: bool = False) -> str:
         
         # Remove duplicates
         unique_sources = list(dict.fromkeys(sources))
-        sources_text = "\n".join(unique_sources[:3])
-        
+        sources_text = "\n".join(unique_sources[:8]) #make the sources unique and limit to 3
+
         # Add confidence indicator based on context
         confidence_indicator = ""
         if confidence_level == 'MEDIUM':
             if is_private:
                 confidence_indicator = "\n\n💡 Need more specific details? Try asking in our public groups!"
             else:
-                confidence_indicator = f"\n\n💡 *Need more specific details?* Ask {ORGANIZER_USERNAME}"
+                confidence_indicator = f"\n\n💡 *Need more specific details?* Ask {ORGANIZER_USERNAME} \n\n In the meantime, Please refer to this guide: https://guide.devfolio.co/"
         
         return f"{confidence_prefix}{response_text}\n\n**Refer:** docs for more details\n{sources_text}{confidence_indicator}"
 
