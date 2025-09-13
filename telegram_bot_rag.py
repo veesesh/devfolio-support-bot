@@ -31,7 +31,7 @@ ORGANIZER_USERNAME = "@vee19tel"  # Organizer to tag when uncertain
 
 # Confidence threshold - lower means more strict
 CONFIDENCE_THRESHOLD = 0.65
-MIN_CONTEXT_LENGTH = 200  # Minimum context length for confident answers
+MIN_CONTEXT_LENGTH = 100  # Minimum context length for confident answers
 
 # Keep existing prompt templates
 QUERY_GENERATION_TEMPLATE = """
