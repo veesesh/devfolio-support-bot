@@ -140,8 +140,8 @@ def query_rag_system(query_text: str, is_dm: bool = False) -> str:
                        "💡 For better support, consider asking in our public channels where community "
                        "members and organizers can help with more context!")
             else:
-                return f"🤔 I couldn't find relevant information for your question in the documentation.\n\n{ORGANIZER_USERNAME} Could you help with this question?"
-            
+                return f"🤔 I couldn't find relevant information for your question in the documentation.\n\n{ORGANIZER_USERNAME} Could you help with this question? \n\n In the meantime, Please refer to this guide: https://guide.devfolio.co/"
+
         # Generate multiple queries using the existing logic
         prompt_template = ChatPromptTemplate.from_template(QUERY_GENERATION_TEMPLATE)
         prompt = prompt_template.format(original_query=query_text)
@@ -185,7 +185,7 @@ def query_rag_system(query_text: str, is_dm: bool = False) -> str:
                 return ("🤔 I couldn't find good matches for your question in the documentation.\n\n"
                        "💡 Try asking in our public channels for better assistance!")
             else:
-                return f"🤔 I couldn't find good matches for your question in the documentation.\n\n{ORGANIZER_USERNAME} Could you help with this question?"
+                return f"🤔 I couldn't find good matches for your question in the documentation.\n\n{ORGANIZER_USERNAME} Could you help with this question? \n\n In the meantime, Please refer to this guide: https://guide.devfolio.co/"
 
         # Use top 8 results
         results = good_results[:8]
@@ -207,7 +207,7 @@ def query_rag_system(query_text: str, is_dm: bool = False) -> str:
                 return ("🤔 I found some information but I'm not confident enough to provide an accurate answer.\n\n"
                        "if you ask again in Devfolio group our staff may be able to chime in!")
             else:
-                return f"🤔 I found some information but I'm not confident about the answer to avoid giving incorrect details.\n\n{ORGANIZER_USERNAME} Could you help with this question: '{query_text}'?"
+                return f"🤔 I found some information but I'm not confident about the answer to avoid giving incorrect details.\n\n{ORGANIZER_USERNAME} Could you help with this query?\n\n In the meantime, Please refer to this guide: https://guide.devfolio.co/"
 
         # Get AI response
         prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
@@ -220,7 +220,7 @@ def query_rag_system(query_text: str, is_dm: bool = False) -> str:
                 return ("🤔 I don't have enough specific information to answer your question confidently.\n\n"
                        "💡 For better assistance, consider asking in our public channels!")
             else:
-                return f"🤔 I don't have enough specific information to answer your question confidently.\n\n{ORGANIZER_USERNAME} Could you help with: '{query_text}'?"
+                return f"🤔 I don't have enough specific information to answer your question confidently.\n\n{ORGANIZER_USERNAME} Could you help with this query?\n\n In the meantime, Please refer to this guide: https://guide.devfolio.co/"
         
         # Handle partial confidence
         confidence_prefix = ""
@@ -242,7 +242,7 @@ def query_rag_system(query_text: str, is_dm: bool = False) -> str:
                 sources.append(f"• [{readable_title}]({full_url})")
         
         unique_sources = list(dict.fromkeys(sources))
-        sources_text = "\n".join(unique_sources[:3])
+        sources_text = "\n".join(unique_sources[:5])
 
         # Add confidence indicator based on context
         confidence_indicator = ""
