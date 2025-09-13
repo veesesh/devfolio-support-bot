@@ -35,59 +35,62 @@ MIN_CONTEXT_LENGTH = 100  # Minimum context length for confident answers
 
 # Keep existing prompt templates
 QUERY_GENERATION_TEMPLATE = """
-You are an expert at generating search queries for a Devfolio hackathon documentation knowledge base.
+Generate up to 3 focused search queries for a Devfolio hackathon docs KB.
 
-Given the user's original question, generate up to 3 diverse but related search queries that would help retrieve comprehensive information to answer the question.
-
-Make the queries:
-1. More specific and focused on different aspects
-2. Use different keywords and phrasings
-3. Be concise but descriptive
+Guidelines:
+- Each query targets a different angle.
+- Use concise, descriptive phrasing.
+- Prefer product terms and UI labels where relevant.
 
 Original Question: {original_query}
 
-Generate queries in this format:
-1. [query 1]
-2. [query 2]
-3. [query 3]
-
-Only generate the numbered list, no other text.
+Output ONLY:
+1. <query 1>
+2. <query 2>
+3. <query 3>
 """
 
-PROMPT_TEMPLATE = """
-You are a Support Assistant for the Devfolio. Devfolio is an online platform that supports hackathons — for both participants (hackers) and organizers.  
-You are responding to questions as a member of the Devfolio Support Staff. Answer the question based only on the following context about hackathons and Devfolio platform:
 
+PROMPT_TEMPLATE = """
+You are Devfolio’s Support Assistant. Answer ONLY using the material below.
+
+[Material]
 {context}
 
----
+[User question]
+{question}
 
-Answer the question based on the above context: {question}
+Write a Telegram-ready reply that follows these rules:
+- Keep it brief: 3–6 numbered points max.
+- Start with a greeting Hi Builder! 👋 
+- Use simple Markdown: **bold** for key terms, `inline code` for buttons/labels.
+- If the material is incomplete, begin with "PARTIAL:" then provide what's known and what's missing.
+- Do not invent details or use outside knowledge.
+- Do NOT use words like “context”, “material”, or “based on the above” in the reply.
+- Do not use emojis in the main answer, only in the greeting or closing.
 
-IMPORTANT: 
-1. Only give confident answers when the context clearly and specifically addresses the question.
-2. If you can answer the question but are not completely confident, start your response with "PARTIAL:"
-3. Do not make up information or provide answers based on assumptions i.e Do not use outside answers.
-4. Keep answers concise and to the point. 
-5. Give answers that is readable to a human and is helpful to understand. 
-6. Do not use words like "context". They are just terms I am using to form questions for you. The participants or organisers should not see this in your response
-7. Give answers in numbered points. 
-8. 
+Format:
+1) Direct answer
+2) Key steps or settings
+3) Requirements/limits
+4) Tips or where to check in the product (if applicable)
 """
 
 CONFIDENCE_EVALUATION_PROMPT = """
-Based on the following context and question, evaluate how confident you can be in providing an accurate answer.
+Evaluate confidence to answer using ONLY the material.
 
-Context: {context}
-Question: {question}
+Material:
+{context}
 
-Rate your confidence level:
-- HIGH: Context directly and comprehensively answers the question
-- MEDIUM: Context partially answers the question but some details may be missing
-- LOW: Context contains no relevant information or is too general
+Question:
+{question}
 
-Respond with only: HIGH, MEDIUM, or LOW
+Respond with ONE word:
+- HIGH  = directly and sufficiently answered
+- MEDIUM = partly answered; gaps remain
+- LOW    = not answered or too generic
 """
+
 
 def evaluate_confidence(query_text: str, context_text: str) -> str:
     """Evaluate confidence level for the given context and question."""
@@ -114,7 +117,7 @@ def query_rag_system(query_text: str, is_private: bool = False) -> str:
         db = Chroma(persist_directory=chroma_path, embedding_function=embedding_function)
 
         # First try with original query to check confidence
-        initial_results = db.similarity_search_with_relevance_scores(query_text, k=4)
+        initial_results = db.similarity_search_with_relevance_scores(query_text, k=6)
         
         # Check if we got high confidence results from initial query
         high_confidence_threshold = 0.65  # Threshold for considering a result high confidence
@@ -156,7 +159,7 @@ def query_rag_system(query_text: str, is_private: bool = False) -> str:
         seen_content = set()
         
         for query in queries:
-            results = db.similarity_search_with_relevance_scores(query, k=3)
+            results = db.similarity_search_with_relevance_scores(query, k=4)
             for doc, score in results:
                 content_hash = hash(doc.page_content[:100])
                 if content_hash not in seen_content and score > 0.4:
@@ -239,8 +242,8 @@ def query_rag_system(query_text: str, is_private: bool = False) -> str:
                 confidence_indicator = "\n\n💡 Need more specific details? Try asking in our public groups!"
             else:
                 confidence_indicator = f"\n\n💡 *Need more specific details?* Ask {ORGANIZER_USERNAME} \n\n In the meantime, Please refer to this guide: https://guide.devfolio.co/"
-        
-        return f"{confidence_prefix}{response_text}\n\n**Refer:** docs for more details\n{sources_text}{confidence_indicator}"
+
+        return f"{confidence_prefix}{response_text}\n\n**📚 Refer these helpful docs for more details**:\n{sources_text}{confidence_indicator}"
 
     except Exception as e:
         logger.error(f"RAG query error: {e}")

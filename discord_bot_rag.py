@@ -31,7 +31,7 @@ ORGANIZER_USERNAME = "<@845015423207473152>"  # Replace with actual Discord user
 
 # Confidence threshold - lower means more strict
 CONFIDENCE_THRESHOLD = 0.65
-MIN_CONTEXT_LENGTH = 200  # Minimum context length for confident answers
+MIN_CONTEXT_LENGTH = 100  # Minimum context length for confident answers
 
 # Existing prompt templates remain the same
 QUERY_GENERATION_TEMPLATE = """
@@ -108,8 +108,8 @@ def evaluate_confidence(query_text: str, context_text: str) -> str:
     try:
         prompt_template = ChatPromptTemplate.from_template(CONFIDENCE_EVALUATION_PROMPT)
         prompt = prompt_template.format(context=context_text, question=query_text)
-        
-        model = ChatOpenAI(temperature=0)
+
+        model = ChatOpenAI(model="gpt-4.1", temperature=0)
         confidence_level = model.invoke(prompt).content.strip().upper()
         
         return confidence_level if confidence_level in ['HIGH', 'MEDIUM', 'LOW'] else 'LOW'
@@ -128,8 +128,8 @@ def query_rag_system(query_text: str, is_dm: bool = False) -> str:
         db = Chroma(persist_directory=chroma_path, embedding_function=embedding_function)
 
         # First try with original query to check confidence
-        initial_results = db.similarity_search_with_relevance_scores(query_text, k=4)
-        
+        initial_results = db.similarity_search_with_relevance_scores(query_text, k=6)
+
         # Check if we got high confidence results from initial query
         high_confidence_threshold = 0.65
         has_high_confidence = any(score > high_confidence_threshold for _, score in initial_results)
@@ -145,8 +145,8 @@ def query_rag_system(query_text: str, is_dm: bool = False) -> str:
         # Generate multiple queries using the existing logic
         prompt_template = ChatPromptTemplate.from_template(QUERY_GENERATION_TEMPLATE)
         prompt = prompt_template.format(original_query=query_text)
-        
-        model = ChatOpenAI(temperature=0.3)
+
+        model = ChatOpenAI(model="gpt-4.1", temperature=0.3)
         response = model.invoke(prompt).content
         
         # Parse queries
@@ -169,7 +169,7 @@ def query_rag_system(query_text: str, is_dm: bool = False) -> str:
         seen_content = set()
         
         for query in queries:
-            results = db.similarity_search_with_relevance_scores(query, k=3)
+            results = db.similarity_search_with_relevance_scores(query, k=4)
             for doc, score in results:
                 content_hash = hash(doc.page_content[:100])
                 if content_hash not in seen_content and score > 0.4:
@@ -186,9 +186,9 @@ def query_rag_system(query_text: str, is_dm: bool = False) -> str:
                        "💡 Try asking in our public channels for better assistance!")
             else:
                 return f"🤔 I couldn't find good matches for your question in the documentation.\n\n{ORGANIZER_USERNAME} Could you help with this question?"
-            
-        # Use top 4 results
-        results = good_results[:4]
+
+        # Use top 8 results
+        results = good_results[:8]
         context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
         
         if len(context_text) < MIN_CONTEXT_LENGTH:
@@ -212,7 +212,7 @@ def query_rag_system(query_text: str, is_dm: bool = False) -> str:
         # Get AI response
         prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
         prompt = prompt_template.format(context=context_text, question=query_text)
-        model = ChatOpenAI()
+        model = ChatOpenAI(model="gpt-4.1", temperature=0)
         response_text = model.invoke(prompt).content
         
         if "UNCERTAIN" in response_text:
