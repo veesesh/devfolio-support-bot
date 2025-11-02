@@ -7,13 +7,16 @@ This version handles both DMs and group messages differently.
 import logging
 import os
 from dotenv import load_dotenv
-from telegram import Update
-from telegram.ext import Application, MessageHandler, filters, ContextTypes
+from telegram import Update, BotCommand
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from langchain_community.vectorstores import Chroma
 from langchain_openai import OpenAIEmbeddings
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from webhook_logger import log_interaction
+
+# Import command responses
+from command_responses import COMMAND_RESPONSES
 
 # Load environment variables
 load_dotenv()
@@ -32,6 +35,9 @@ ORGANIZER_USERNAME = "@vee19tel"  # Organizer to tag when uncertain
 # Confidence threshold - lower means more strict
 CONFIDENCE_THRESHOLD = 0.65
 MIN_CONTEXT_LENGTH = 100  # Minimum context length for confident answers
+
+# Track command response message IDs to ignore replies to them
+command_response_messages = set()
 
 # Keep existing prompt templates
 QUERY_GENERATION_TEMPLATE = """
@@ -278,6 +284,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         
         # Check if message is a reply to bot's message
         if update.message.reply_to_message and update.message.reply_to_message.from_user.is_bot:
+            replied_message_id = update.message.reply_to_message.message_id
+            
+            # If replying to a command response message, ignore it
+            if replied_message_id in command_response_messages:
+                logger.info(f"User replied to a slash command response (ID: {replied_message_id}), ignoring...")
+                return
+            
+            # Otherwise, it's a reply to a RAG response, so respond
             bot_mentioned = True
         
         # If bot is not mentioned in group, ignore the message
@@ -331,6 +345,71 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> N
     """Log errors caused by Updates."""
     logger.warning(f'Update {update} caused error {context.error}')
 
+
+# Command handlers
+async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Welcome message."""
+    sent_message = await update.message.reply_text(COMMAND_RESPONSES["start"], parse_mode='Markdown')
+    command_response_messages.add(sent_message.message_id)
+
+
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Show all available commands."""
+    sent_message = await update.message.reply_text(COMMAND_RESPONSES["help"], parse_mode='Markdown')
+    command_response_messages.add(sent_message.message_id)
+
+
+async def hackathon_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Info about hackathons."""
+    sent_message = await update.message.reply_text(COMMAND_RESPONSES["hackathon"], parse_mode='Markdown')
+    command_response_messages.add(sent_message.message_id)
+
+
+async def judging_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Info about judging process."""
+    sent_message = await update.message.reply_text(COMMAND_RESPONSES["judging"], parse_mode='Markdown')
+    command_response_messages.add(sent_message.message_id)
+
+
+async def submission_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Info about submissions."""
+    sent_message = await update.message.reply_text(COMMAND_RESPONSES["submission"], parse_mode='Markdown')
+    command_response_messages.add(sent_message.message_id)
+
+
+async def team_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Info about teams."""
+    sent_message = await update.message.reply_text(COMMAND_RESPONSES["team"], parse_mode='Markdown')
+    command_response_messages.add(sent_message.message_id)
+
+
+async def prizes_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Info about prizes."""
+    sent_message = await update.message.reply_text(COMMAND_RESPONSES["prizes"], parse_mode='Markdown')
+    command_response_messages.add(sent_message.message_id)
+
+
+async def support_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Additional support information."""
+    sent_message = await update.message.reply_text(COMMAND_RESPONSES["support"], parse_mode='Markdown')
+    command_response_messages.add(sent_message.message_id)
+
+
+async def setup_bot_commands(application):
+    """Set up the bot command menu that appears when users type /"""
+    commands = [
+        BotCommand("start", "Welcome message"),
+        BotCommand("help", "Show all commands"),
+        BotCommand("hackathon", "Info about hackathons"),
+        BotCommand("judging", "Judging process"),
+        BotCommand("submission", "How to submit projects"),
+        BotCommand("team", "Create/join teams"),
+        BotCommand("track", "Track and Prizes information"),
+        BotCommand("support", "Get additional help"),
+    ]
+    await application.bot.set_my_commands(commands)
+    logger.info("✅ Bot command menu set up successfully")
+
 def main() -> None:
     """Start the bot."""
     # Get bot token from environment
@@ -349,26 +428,40 @@ def main() -> None:
     # Create the Application
     application = Application.builder().token(token).build()
 
-    # Add handlers
+    # Add command handlers
+    application.add_handler(CommandHandler("start", start_command))
+    application.add_handler(CommandHandler("help", help_command))
+    application.add_handler(CommandHandler("hackathon", hackathon_command))
+    application.add_handler(CommandHandler("judging", judging_command))
+    application.add_handler(CommandHandler("submission", submission_command))
+    application.add_handler(CommandHandler("team", team_command))
+    application.add_handler(CommandHandler("prizes", prizes_command))
+    application.add_handler(CommandHandler("support", support_command))
+    
+    # Add message handler for RAG (non-command messages)
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    
+    # Add error handler
     application.add_error_handler(error_handler)
+    
+    # Set up bot commands menu
+    application.post_init = setup_bot_commands
 
     # Start the bot
-    logger.info("Starting RAG-integrated test bot...")
-    print("🤖 RAG-integrated Telegram bot (Test Version) is starting...")
-    print("📋 Bot behavior:")
-    print("   • Responds in both private messages and groups")
-    print("   • Group messages: Responds when mentioned (@botname)")
-    print("   • Private messages: Direct responses with suggestions for public groups")
-    print("   • Searches Devfolio documentation for answers")
-    print("   • Provides clickable source links")
-    print("   • Context-aware responses:")
-    print("     - Groups: Tags organizer when uncertain")
-    print("     - DMs: Suggests asking in public groups")
-    print("   • Uses confidence evaluation to avoid wrong answers")
-    print("\n✅ Bot is ready for testing!")
-    print("🔗 Try in private chat or add to a group")
-    print("   Group example: '@yourbotname How do I organize a hackathon?'")
+    logger.info("Starting RAG-integrated bot with slash commands...")
+    print("🤖 Telegram bot is starting...")
+    print("\n📋 Bot features:")
+    print("   ✅ Slash commands for quick answers (/start, /help, /hackathon, etc.)")
+    print("   ✅ RAG-powered responses for detailed questions")
+    print("   ✅ Works in both private messages and groups")
+    print("   ✅ Group messages: Responds when mentioned (@botname)")
+    print("   ✅ Private messages: Direct responses")
+    print("   ✅ Searches Devfolio documentation for answers")
+    print("   ✅ Provides clickable source links")
+    print("   ✅ Context-aware responses with confidence evaluation")
+    print("\n✅ Bot is ready!")
+    print("🔗 Try commands: /start, /help, /hackathon, /judging, /submission, /team, /prizes, /support")
+    print("💬 Or ask: '@yourbotname How do I organize a hackathon?'")
     
     # Run the bot until the user presses Ctrl-C
     application.run_polling(allowed_updates=Update.ALL_TYPES)
