@@ -7,7 +7,7 @@ uv run telegram_bot_rag.py &
 TELEGRAM_PID=$!
 uv run discord_bot_rag.py &
 DISCORD_PID=$!
-python commands.py &
+uv run commands.py &
 COMMANDS_PID=$!
 
 echo "Telegram bot running with PID $TELEGRAM_PID"
